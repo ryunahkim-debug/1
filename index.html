@@ -227,6 +227,10 @@
 <script>
 const PLANTS = [{"id":"P001","name":"익모초","date":"2026.05.29","photoId":"1OED0YUF115PsGMzMxL71p6H0IL99FSVa","lat":37.509277,"lng":126.956363,"sciName":"Leonurus japonicus Houtt.","desc":"들에 자라는 꿀풀과 두해살이풀로, 예로부터 산후 부인병 약재로 쓰여 '익모(益母)'라는 이름이 붙었습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P002","name":"벚나무","date":"2026.05.29","photoId":"1w0Ego_jHhZA8jCnhl7AVMjEG7dzDI3CB","lat":37.509913,"lng":126.956013,"sciName":"Prunus serrulata Lindl. f. spontanea (Maxim.) Chin S.Chang","desc":"봄에 연분홍 꽃이 잎보다 먼저 또는 함께 피는 장미과 낙엽큰키나무입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P003","name":"물푸레나무","date":"2026.05.29","photoId":"1ncZfCdxNvwLKeKgAJtuDlFTkzhtMedCD","lat":37.509277,"lng":126.956363,"sciName":"Fraxinus rhynchophylla Hance","desc":"가지를 물에 담그면 물이 푸르게 변한다 하여 이름 붙은, 목재가 단단해 도구·운동기구에 쓰이는 낙엽교목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P004","name":"광나무","date":"2026.05.29","photoId":"1RrBvomYTJS_gRsRUZ3GcdSPvssXYu8J0","lat":37.509913,"lng":126.956013,"sciName":"Ligustrum japonicum Thunb.","desc":"잎에 광택이 도는 남부지방 상록관목으로, 울타리나 정원수로 흔히 심습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P005","name":"물쑥","date":"2026.05.29","photoId":"1-o7UMilPPZngmHOnKv12AQkKuDPGE7Ug","lat":37.5099131,"lng":126.9560131,"sciName":"Artemisia selengensis Turcz. ex Besser","desc":"강가나 습지에서 자라는 국화과 여러해살이풀로, 어린순을 나물로 먹습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P006","name":"황종화","date":"2026.05.29","photoId":"1mhphvewgkJbs0R8-7T59MekQqwdRmxux","lat":37.509305,"lng":126.95654,"sciName":"Tecoma stans (L.) Juss. ex Kunth","desc":"트럼펫 모양의 밝은 노란색 꽃이 오래 피어 관상용으로 많이 심는 능소화과 상록성 나무로, 열매는 초반엔 녹색을 띠지만 자라면서 회갈색으로 변합니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P007","name":"옥잠화","date":"2026.05.29","photoId":"1KRXU8u3Mts0s8ZLQerRQ-b-xPn6Ix8d_","lat":37.509913,"lng":126.956913,"sciName":"Hosta plantaginea (Lam.) Asch.","desc":"여름에 향기로운 흰 꽃이 피는 비비추 종류로, 꽃봉오리가 옥비녀를 닮아 붙은 이름입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P008","name":"개망초","date":"2026.05.29","photoId":"19OT20kqczPsE6pU_8rjasSceWQoMWt2Y","lat":37.51002,"lng":126.955467,"sciName":"Erigeron annuus (L.) Desf.","desc":"들판 어디서나 흔한 국화과 두해살이풀로, 흰 혀꽃과 노란 통꽃이 계란프라이처럼 보입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P009","name":"산딸나무","date":"2026.05.29","photoId":"1VDynz-QLwVFiA4l817R5SEJbacE0oNn9","lat":37.509913,"lng":126.956013,"sciName":"Cornus kousa Bürger ex Hance","desc":"흰 십자 모양 총포가 꽃처럼 보이고 가을에 딸기 같은 붉은 열매가 달리는 층층나무과 낙엽교목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P010","name":"담쟁이덩굴","date":"2026.05.29","photoId":"1fb_8sJ-UCVMwEZ3nfoqctV0YWD4C72Wv","lat":37.510969,"lng":126.955074,"sciName":"Parthenocissus tricuspidata (Siebold & Zucc.) Planch.","desc":"흡착 뿌리로 벽이나 나무를 타고 오르는 포도과 덩굴식물로, 가을 단풍이 붉습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P011","name":"맥문동","date":"2026.05.29","photoId":"1SM5qkhB7hsPHQbF_wassNXagtttJZxor","lat":37.509424,"lng":126.956121,"sciName":"Liriope muscari (Decne.) L.H.Bailey","desc":"그늘에서도 잘 자라 지피식물로 많이 쓰이며, 여름에 보라색 꽃이 이삭처럼 핍니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P012","name":"철쭉","date":"2026.05.29","photoId":"1Rvt3T5TZgf7WipdlXXwH3aICg64WAxSH","lat":37.509424,"lng":126.956216,"sciName":"Rhododendron schlippenbachii Maxim.","desc":"봄에 연분홍 꽃이 피는 진달래과 낙엽관목으로, 진달래와 달리 꽃에 독성이 있어 먹지 않습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P013","name":"박쥐나무","date":"2026.05.29","photoId":"16NUuxNZvMDxZSdQkrBr1GEEE9LBuw-lN","lat":37.509424,"lng":126.9562161,"sciName":"Alangium platanifolium (Siebold & Zucc.) Harms var. trilobum (Miq.) Ohwi","desc":"잎이 박쥐 날개처럼 갈라진 모양이라 이름 붙은 낙엽관목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P014","name":"댕강나무","date":"2026.05.29","photoId":"1Rb8OHtQ9qZ-QpNR8k7qpjubTvYerF4nr","lat":37.5094241,"lng":126.9562162,"sciName":"Zabelia tyaihyonii (Nakai) Hisauti & H.Hara","desc":"가지를 꺾으면 '댕강' 소리가 난다 하여 붙은 이름으로, 향기로운 연분홍 꽃이 피는 인동과 관목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P015","name":"뽕나무","date":"2026.05.29","photoId":"1DcLb3HoqWi0ggfNADx0Y20MSN_JS3EgU","lat":37.5094243,"lng":126.9562163,"sciName":"Morus alba L.","desc":"에의 먹이가 되는 잎과 검붉은 열매 '오디'로 잘 알려진 낙엽교목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P016","name":"서양등골나무","date":"2026.06.05","photoId":"1IQRQNGt1Ebi-Ajpz7s59PTkx6fx26j3P","lat":37.509781,"lng":126.9578813,"sciName":"Ageratina altissima (L.) R.M.King & H.Rob.","desc":"북미 원산의 생태계교란 외래식물로, 가을에 흰 꽃이 무리지어 핍니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P017","name":"메꽃","date":"2026.06.05","photoId":"1jHKClF2KzvDno8310Z9MmJD9gvi2iM0J","lat":37.50984,"lng":126.956679,"sciName":"Calystegia pubescens Lindl.","desc":"들에서 분홍빛 나팔 모양 꽃을 피우는 덩굴성 여러해살이풀입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P018","name":"쑥","date":"2026.06.05","photoId":"1wmQ0x6CB85b620D0Q0f5euDTKa9Saz5E","lat":37.509555,"lng":126.956702,"sciName":"Artemisia indica Willd.","desc":"떡·국·약재로 두루 쓰이는 국화과 여러해살이풀로 특유의 향이 강합니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P019","name":"고들빼기","date":"2026.06.05","photoId":"1EKakfHRFh2PsQUaH_B5evCcXi455DirZ","lat":37.5097208,"lng":126.9572072,"sciName":"Crepidiastrum sonchifolium (Bunge) J.H.Pak & Kawano","desc":"쓴맛 나는 노란 꽃의 국화과 풀로, 김치나 나물로 먹습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P020","name":"띠","date":"2026.06.05","photoId":"1nPg-zmwVho5rTUCGYXkrUQcygGODi1nU","lat":37.509838,"lng":126.956776,"sciName":"Imperata cylindrica (L.) Raeusch.","desc":"흰 솜털 같은 꽃이삭이 달리는 볏과 여러해살이풀로, 뿌리(백모근)를 약으로 씁니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P021","name":"펜둘라사초","date":"2026.06.05","photoId":"1j23w5ESI0bp5mWNh3CED47Oje64Ic7Su","lat":37.50964,"lng":126.956638,"sciName":"Carex pendula Huds.","desc":"꽃이삭이 길게 늘어지는 유럽 원산 사초과 식물로, 주로 조경용으로 식재합니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P022","name":"왕고들빼기","date":"2026.06.05","photoId":"1cadoOo3SZ99-cHNn6oILoeRq-EaoOBu7","lat":37.5098016,"lng":126.9571817,"sciName":"Lactuca indica L.","desc":"키가 크게 자라는 국화과 풀로, 연한 잎을 쌈채소로 먹습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P023","name":"개회향","date":"2026.06.05","photoId":"11uNQ_hCR9qi8Q3yuDSr-4Id066xX9NGA","lat":37.5098992,"lng":126.9570553,"sciName":"Ligusticum tachiroei (Franch. & Sav.) M.Hiroe & Constance","desc":"산지 바위틈에 자라는 미나리과 여러해살이풀입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P024","name":"정금나무","date":"2026.06.05","photoId":"1CrZig2fMqVOUCDj4QBBeZhE4g7Q-spxh","lat":37.5097298,"lng":126.9572072,"sciName":"Vaccinium oldhamii Miq.","desc":"블루베리와 같은 진달래과로, 가을에 검게 익는 열매를 먹을 수 있습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P025","name":"사철나무","date":"2026.06.05","photoId":"1gh2uFx7e1MNaGXRHESrXUatYX7alrU-Z","lat":37.51003,"lng":126.956544,"sciName":"Euonymus japonicus Thunb.","desc":"사철 푸른 잎을 가진 상록관목으로 생울타리에 널리 쓰입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P026","name":"참나리","date":"2026.06.05 ","photoId":"1QJ25QLs2V0Epnaf3rgrcLWwSiY0xYktl","lat":37.509754,"lng":126.956546,"sciName":"Lilium lancifolium Thunb.","desc":"주황색 꽃잎에 검은 점이 박혀 뒤로 말리며, 잎겨드랑이에 검은 주아가 달리는 백합과 식물입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P027","name":"찔레나무","date":"2026.06.05","photoId":"1qNB4AhgfX_SZrJfN5s8W1xAGfJ_dTF8z","lat":37.509824,"lng":126.9567505,"sciName":"Rosa multiflora THUNB.","desc":"흰 꽃이 무리지어 피는 야생 장미로, 가지에 가시가 많습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P028","name":"왕바랭이","date":"2026.06.05","photoId":"158EdKmBguBJbaPc5kXF4W9hs1NZ3jnaZ","lat":37.5097298,"lng":126.9572072,"sciName":"Eleusine indica (L.) Gaertn.","desc":"길가나 밭에 흔한 볏과 한해살이풀로 대표적인 잡초입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P029","name":"눈향나무","date":"2026.06.05","photoId":"1ibW7yd5r52JbhsnnlI69RPWHNDIqnm3c","lat":37.509167,"lng":126.956303,"sciName":"Juniperus chinensis L. var. sargentii A.Henry","desc":"고산지대에서 땅에 누워 자라는 향나무 종류입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P030","name":"호밀풀","date":"2026.06.05","photoId":"1txPrphplAUBuj6ct2TyTVNHGrtuI8VaL","lat":37.509824,"lng":126.9567505,"sciName":"Lolium perenne L.","desc":"목초·잔디용으로 심는 볏과 식물로 영문명은 perennial ryegrass입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P031","name":"큰방가지똥","date":"2026.06.05","photoId":"1NMigY8xj-0XYmZDoq22dzGgaOX8PLmXQ","lat":37.5097289,"lng":126.9567506,"sciName":"Sonchus asper (L.) Hill","desc":"잎 가장자리에 가시가 있는 국화과 한해살이 잡초입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P032","name":"코스모스","date":"2026.06.05","photoId":"18E_bjiMZgCJ4z-RGgRmRsg8ecI1DYi2x","lat":37.509843,"lng":126.956963,"sciName":"Cosmos bipinnatus Cav.","desc":"가을에 분홍·흰색 꽃이 피는 멕시코 원산의 국화과 한해살이풀입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P033","name":"나문재","date":"2026.06.05","photoId":"1U_ujbgg-tKctezIEXLq0vMnZnoC8quRO","lat":37.509678,"lng":126.956774,"sciName":"Suaeda glauca (Bunge) Bunge","desc":"바닷가 갯벌에 자라는 명아주과 염생식물로, 가을에 붉게 물듭니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P034","name":"서양금혼초","date":"2026.06.05","photoId":"1y55m1JBMSp2tBpgxY77CcgKEDF7P8G5v","lat":37.5100375,"lng":126.9565299,"sciName":"Hypochaeris radicata L.","desc":"유럽 원산의 생태계교란식물로, 민들레와 비슷한 노란 꽃이 핍니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P035","name":"두릅나무","date":"2026.06.05","photoId":"1FD1tJYocCH1_A97rv0CPrPw7U3bGyFRa","lat":37.51002191,"lng":126.9566631,"sciName":"Aralia elata (Miq.) Seem.","desc":"봄에 돋는 새순(두릅)을 나물로 먹는 두릅나무과 낙엽관목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0}];
 
+/* Buffered campus outline (convex hull of all 35 plant points, expanded ~35%)
+   used to mask out everything on the map except Dongyang Middle School. */
+const CAMPUS_HULL = [[37.5085348,126.9563971],[37.51005,126.9548674],[37.5115463,126.9544249],[37.5096683,126.9588238]];
+
 /* ---------- helpers ---------- */
 function photoUrl(id, attempt){
   if(attempt === 0) return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
@@ -241,20 +245,18 @@ function escapeHtml(str){
 }
 
 /* ---------- map setup ---------- */
-const lats = PLANTS.map(p=>p.lat), lngs = PLANTS.map(p=>p.lng);
-const south = Math.min(...lats) - 0.0009, north = Math.max(...lats) + 0.0009;
-const west  = Math.min(...lngs) - 0.0009, east  = Math.max(...lngs) + 0.0009;
-const centerLat = (Math.min(...lats)+Math.max(...lats))/2;
-const centerLng = (Math.min(...lngs)+Math.max(...lngs))/2;
-const schoolBounds = L.latLngBounds([south, west], [north, east]);
+const hullLats = CAMPUS_HULL.map(p=>p[0]), hullLngs = CAMPUS_HULL.map(p=>p[1]);
+const centerLat = (Math.min(...hullLats)+Math.max(...hullLats))/2;
+const centerLng = (Math.min(...hullLngs)+Math.max(...hullLngs))/2;
+const campusBounds = L.latLngBounds(CAMPUS_HULL);
 
 const map = L.map('map', {
   center: [centerLat, centerLng],
   zoom: 18,
-  minZoom: 16,
+  minZoom: 17,
   maxZoom: 21,
-  maxBounds: schoolBounds.pad(0.6),
-  maxBoundsViscosity: 0.9,
+  maxBounds: campusBounds.pad(0.25),
+  maxBoundsViscosity: 1.0,
   zoomControl: false
 });
 L.control.zoom({ position:'bottomleft' }).addTo(map);
@@ -270,6 +272,27 @@ const roadmapLayer = googleLayer('m');
 const satelliteLayer = googleLayer('y');
 roadmapLayer.addTo(map);
 let currentLayer = 'road';
+
+/* Mask out everything outside the campus outline: a huge outer ring with the
+   campus hull cut out as a hole, so only Dongyang Middle School stays visible
+   on both the roadmap and satellite layers. */
+const MASK_FAR = 3; // degrees, safely covers any pan/zoom within maxBounds
+const maskOuterRing = [
+  [centerLat-MASK_FAR, centerLng-MASK_FAR],
+  [centerLat-MASK_FAR, centerLng+MASK_FAR],
+  [centerLat+MASK_FAR, centerLng+MASK_FAR],
+  [centerLat+MASK_FAR, centerLng-MASK_FAR]
+];
+L.polygon([maskOuterRing, CAMPUS_HULL], {
+  stroke: true,
+  color: '#16a34a',
+  weight: 3,
+  opacity: 0.9,
+  fill: true,
+  fillColor: '#f0fdf4',
+  fillOpacity: 1,
+  interactive: false
+}).addTo(map);
 
 document.getElementById('btnRoadmap').addEventListener('click', ()=>{
   if(currentLayer==='road') return;
@@ -291,7 +314,7 @@ function setLayerBtnStyle(){
 }
 
 document.getElementById('recenterBtn').addEventListener('click', ()=>{
-  map.fitBounds(schoolBounds, { padding:[20,20] });
+  map.fitBounds(campusBounds, { padding:[16,16] });
 });
 
 /* markers + clustering */
@@ -321,7 +344,7 @@ PLANTS.forEach((p, idx) => {
   cluster.addLayer(marker);
 });
 map.addLayer(cluster);
-map.fitBounds(schoolBounds, { padding:[20,20] });
+map.fitBounds(campusBounds, { padding:[16,16] });
 
 let activeMarkerId = null;
 function highlightMarker(id){
