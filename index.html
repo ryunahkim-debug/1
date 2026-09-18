@@ -1,591 +1,455 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>소크라테스 튜터 - 스스로 답을 찾는 지적 여정</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Marked.js for Markdown parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Google Fonts (Inter & Noto Sans KR) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>동양중학교 식물지도 | 35종 식물 탐방</title>
 
-    <style>
-        body {
-            font-family: 'Noto Sans KR', 'Inter', sans-serif;
-        }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        .chat-bubble-tutor {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border: 1px solid #e2e8f0;
-        }
-        .chat-bubble-user {
-            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-        }
-        .pulse-slow {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
-        }
-    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- FontAwesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<!-- Leaflet MarkerCluster -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+
+<style>
+  :root{
+    --leaf-600:#16a34a;
+    --leaf-700:#15803d;
+    --leaf-50:#f0fdf4;
+  }
+  html,body{ height:100%; overflow:hidden; }
+  body{
+    font-family:'Noto Sans KR','Inter',sans-serif;
+    background:#f0fdf4;
+  }
+  ::-webkit-scrollbar{ width:6px; height:6px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#bbf7d0; border-radius:4px; }
+  ::-webkit-scrollbar-thumb:hover{ background:#86efac; }
+
+  #map{ width:100%; height:100%; background:#e2f5e9; }
+  .leaflet-container{ font-family:'Noto Sans KR','Inter',sans-serif; }
+
+  /* custom plant marker */
+  .plant-pin{
+    width:34px; height:34px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--leaf-600);
+    border:3px solid #fff;
+    border-radius:50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow:0 2px 6px rgba(0,0,0,.35);
+  }
+  .plant-pin i{ transform: rotate(45deg); color:#fff; font-size:14px; }
+  .plant-pin.active{ background:#f59e0b; }
+
+  /* cluster theme */
+  .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large{
+    background-color: rgba(22,163,74,0.25) !important;
+  }
+  .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div{
+    background-color: rgba(21,128,61,0.85) !important;
+    color:#fff; font-weight:700; font-family:'Noto Sans KR',sans-serif;
+  }
+
+  .screen-slide{ transition: transform .32s cubic-bezier(.25,.8,.3,1); }
+  .sheet-slide{ transition: transform .28s cubic-bezier(.25,.8,.3,1); }
+
+  .leaflet-control-attribution{ font-size:9px !important; }
+
+  .plant-photo-fallback{
+    background: repeating-linear-gradient(135deg, #dcfce7, #dcfce7 10px, #f0fdf4 10px, #f0fdf4 20px);
+  }
+
+  @keyframes pop-in{ from{ opacity:0; transform:scale(.92);} to{ opacity:1; transform:scale(1);} }
+  .pop-in{ animation: pop-in .25s ease-out; }
+</style>
 </head>
-<body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden">
+<body class="text-slate-800">
 
-    <!-- Navigation Header -->
-    <header class="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between shadow-sm z-10 flex-shrink-0">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
-                <i class="fa-solid fa-graduation-cap text-lg"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-lg text-slate-900 leading-tight">소크라테스 튜터 <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-semibold ml-1">Socratic AI</span></h1>
-                <p class="text-xs text-slate-500">질문과 비유로 스스로 답을 찾아가는 사고력 탐구실</p>
-            </div>
-        </div>
+<div class="h-screen w-screen flex flex-col overflow-hidden relative">
 
-        <div class="flex items-center space-x-2">
-            <!-- Subject Selector -->
-            <select id="subjectSelect" class="bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                <option value="general">🌐 모든 탐구 주제</option>
-                <option value="physics">🔬 물리 & 자연과학</option>
-                <option value="math">📐 수학 & 논리학</option>
-                <option value="coding">💻 프로그래밍 & 컴퓨터</option>
-                <option value="philosophy">🏛️ 철학 & 인문학</option>
-            </select>
+  <!-- Header -->
+  <header class="bg-white border-b border-emerald-100 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm z-20 flex-shrink-0">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-200 flex-shrink-0">
+        <i class="fa-solid fa-seedling text-lg"></i>
+      </div>
+      <div class="min-w-0">
+        <h1 class="font-extrabold text-base sm:text-lg text-slate-900 leading-tight truncate">동양중학교 식물지도</h1>
+        <p class="text-[11px] sm:text-xs text-slate-500 truncate">서울 동작구 · 우리 학교에서 찾은 식물 35종</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <span class="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+        <i class="fa-solid fa-leaf"></i> 총 35종
+      </span>
+      <button id="listBtn" class="flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg transition-colors shadow-sm">
+        <i class="fa-solid fa-list-ul"></i>
+        <span class="hidden xs:inline sm:inline">식물 목록</span>
+      </button>
+    </div>
+  </header>
 
-            <!-- TTS Voice Toggle -->
-            <button id="ttsToggleBtn" title="음성 읽기 켜기/끄기" class="p-2 text-slate-600 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 rounded-lg transition-colors border border-slate-200 flex items-center gap-1.5 text-xs font-medium">
-                <i id="ttsIcon" class="fa-solid fa-volume-xmark text-slate-400"></i>
-                <span id="ttsStatusText" class="hidden sm:inline text-slate-600">음성 끔</span>
-            </button>
+  <!-- Main stage: map + overlays -->
+  <div class="flex-1 relative overflow-hidden">
 
-            <!-- Reset Chat -->
-            <button id="resetBtn" title="대화 초기화" class="p-2 text-slate-600 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-lg transition-colors border border-slate-200 text-xs font-medium flex items-center gap-1">
-                <i class="fa-solid fa-rotate-right"></i>
-                <span class="hidden sm:inline">새 대화</span>
-            </button>
-        </div>
-    </header>
+    <!-- Map Screen -->
+    <div id="mapScreen" class="absolute inset-0">
+      <div id="map"></div>
 
-    <!-- Main Content Container -->
-    <div class="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto p-3 sm:p-4 gap-4">
+      <!-- Layer toggle -->
+      <div class="absolute top-3 right-3 z-[500] bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex text-xs font-semibold">
+        <button id="btnRoadmap" class="px-3 py-2 bg-emerald-600 text-white transition-colors">일반지도</button>
+        <button id="btnSatellite" class="px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors">위성지도</button>
+      </div>
 
-        <!-- Left Column: Chat Container -->
-        <main class="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            
-            <!-- Quick Suggestion Pills -->
-            <div class="p-3 bg-slate-50/80 border-b border-slate-200 flex items-center gap-2 overflow-x-auto text-xs whitespace-nowrap scrollbar-none">
-                <span class="text-slate-400 font-medium text-2xl leading-none flex items-center"><i class="fa-solid fa-lightbulb text-amber-400 mr-1 text-sm"></i> 추천 탐구:</span>
-                <button class="sample-q-btn bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-full transition-all">
-                    물체가 떨어질 때 공기저항이 없으면 왜 동시에 떨어질까?
-                </button>
-                <button class="sample-q-btn bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-full transition-all">
-                    숫자 0으로 나누는 것은 왜 불가능할까?
-                </button>
-                <button class="sample-q-btn bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-full transition-all">
-                    재귀함수(Recursion)란 정확히 어떤 개념일까?
-                </button>
-                <button class="sample-q-btn bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-full transition-all">
-                    '행복'이란 무엇이고 어떻게 정의할 수 있을까?
-                </button>
-            </div>
+      <!-- Recenter -->
+      <button id="recenterBtn" title="학교 전체 보기" class="absolute bottom-24 sm:bottom-6 right-3 z-[500] w-11 h-11 bg-white rounded-full shadow-lg border border-slate-200 flex items-center justify-center text-emerald-700 hover:bg-emerald-50 transition-colors">
+        <i class="fa-solid fa-house-chimney"></i>
+      </button>
 
-            <!-- Chat Message History -->
-            <div id="chatBox" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-6">
-                <!-- Initial Welcome Message -->
-                <div class="flex gap-3.5 items-start">
-                    <div class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-md">
-                        소
-                    </div>
-                    <div class="chat-bubble-tutor rounded-2xl rounded-tl-none p-4 max-w-[85%] shadow-sm">
-                        <div class="flex items-center justify-between mb-1.5 border-b border-slate-200/60 pb-1">
-                            <span class="font-semibold text-xs text-indigo-900">소크라테스 튜터</span>
-                            <span class="text-[10px] text-indigo-500 font-medium bg-indigo-50 px-2 py-0.5 rounded-full">지적 탐구 모드</span>
-                        </div>
-                        <div class="text-sm text-slate-700 leading-relaxed space-y-2">
-                            <p>반갑습니다! 저는 답을 직접 알려주는 대신, 깊은 질문과 비유를 통해 여러분이 스스로 깨달음을 얻도록 돕는 <strong>소크라테스 튜터</strong>입니다.</p>
-                            <p>평소 궁금했던 문제나 원리에 대해 자유롭게 물어보세요. 함께 차근차근 밝혀내 봅시다!</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Typing / Processing Indicator (Hidden by default) -->
-            <div id="loadingIndicator" class="hidden px-6 py-2 bg-slate-50 border-t border-slate-100 flex items-center space-x-2 text-indigo-600 text-xs font-medium">
-                <i class="fa-solid fa-spinner fa-spin"></i>
-                <span class="pulse-slow">소크라테스 튜터가 당신의 생각을 이끌어낼 질문을 구상하고 있습니다...</span>
-            </div>
-
-            <!-- Input Area -->
-            <div class="p-3 sm:p-4 border-t border-slate-200 bg-white">
-                <form id="chatForm" class="flex gap-2 items-end">
-                    <div class="flex-1 relative">
-                        <textarea id="userInput" rows="2" placeholder="질문이나 생각을 적어보세요... (예: 무거운 것과 가벼운 것이 왜 같이 떨어지나요?)" 
-                            class="w-full border border-slate-300 rounded-xl p-3 pr-10 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none transition-all"></textarea>
-                    </div>
-                    <button type="submit" id="sendBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-5 py-3 rounded-xl transition-all shadow-md hover:shadow-indigo-200 flex items-center justify-center gap-1.5 text-sm h-[48px]">
-                        <span>질문하기</span>
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                    </button>
-                </form>
-                <div class="flex justify-between items-center mt-2 px-1 text-[11px] text-slate-400">
-                    <span>💡 Tip: 정답을 단번에 물어보기보다, 현재 아는 바를 솔직하게 말해보세요.</span>
-                    <span id="charCounter">0자</span>
-                </div>
-            </div>
-        </main>
-
-        <!-- Right Column: Socratic Note & Progress (Collapsible/Responsive) -->
-        <aside class="hidden lg:flex w-80 flex-col gap-4">
-            <!-- Learning Note Card -->
-            <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex-1 flex flex-col">
-                <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-                    <h2 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-                        <i class="fa-solid fa-book-bookmark text-indigo-500"></i> 나의 깨달음 노트
-                    </h2>
-                    <button id="saveNoteBtn" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
-                        <i class="fa-solid fa-floppy-disk"></i> 저장
-                    </button>
-                </div>
-                <p class="text-xs text-slate-500 mb-2">대화 중 도출해낸 원리나 핵심 질문을 정리해보세요.</p>
-                <textarea id="notebook" placeholder="예: 무거운 물체는 중력도 많이 받지만, 당겨질 때 관성(저항)도 크기 때문에 같은 가속도로 떨어진다." 
-                    class="flex-1 w-full border border-slate-200 rounded-xl p-3 text-xs text-slate-700 focus:ring-2 focus:ring-indigo-400 outline-none resize-none bg-slate-50/50 leading-relaxed"></textarea>
-                <div id="noteStatus" class="text-[10px] text-emerald-600 mt-1 h-4 text-right"></div>
-            </div>
-
-            <!-- Socratic Method Guide Card -->
-            <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-sm">
-                <h3 class="font-semibold text-xs text-indigo-200 mb-2 flex items-center gap-1">
-                    <i class="fa-solid fa-compass text-amber-400"></i> 소크라테스 대화의 3단계
-                </h3>
-                <ol class="text-xs space-y-2 text-slate-300 pl-1">
-                    <li class="flex items-start gap-2">
-                        <span class="bg-indigo-800/80 text-indigo-200 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">1</span>
-                        <span><strong>기반 확인:</strong> 기존에 알고 있는 기본 경험 확인</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <span class="bg-indigo-800/80 text-indigo-200 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">2</span>
-                        <span><strong>힌트 & 비유:</strong> 핵심 단서와 일상 속 비유 제시</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <span class="bg-indigo-800/80 text-indigo-200 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">3</span>
-                        <span><strong>원리 도출:</strong> 스스로 결론을 도출하고 생각 확장</span>
-                    </li>
-                </ol>
-            </div>
-        </aside>
-
+      <!-- Hint pill -->
+      <div class="absolute top-3 left-3 z-[500] bg-white/95 backdrop-blur px-3 py-2 rounded-xl shadow-md border border-slate-200 max-w-[210px] pointer-events-none">
+        <p class="text-[11px] leading-snug text-slate-600"><i class="fa-solid fa-circle-info text-emerald-500 mr-1"></i>초록 잎 마커를 눌러 식물 정보를 확인하세요.</p>
+      </div>
     </div>
 
-    <script>
-        // --- System Prompt Definition ---
-        const SOCRATIC_SYSTEM_PROMPT = `# Role & Identity
-당신의 이름은 '소크라테스 튜터'입니다. 당신은 학습자가 스스로 사고하고 문제 해결 능력 및 논리적 연쇄를 확장하도록 돕는 정교한 교육용 AI 튜터입니다.
+    <!-- Detail Screen (slides over map) -->
+    <div id="detailScreen" class="screen-slide absolute inset-0 z-[600] translate-x-full bg-white flex flex-col">
+      <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-100 flex-shrink-0">
+        <button id="backBtn" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] text-slate-400 font-medium" id="detailIndex">1 / 35</p>
+        </div>
+        <button id="showOnMapBtn" class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1">
+          <i class="fa-solid fa-map-location-dot"></i> 지도에서 보기
+        </button>
+      </div>
 
-# Primary Goal
-학습자의 질문이나 고민에 대해 절대로 정답이나 최종 결론을 직접 알려주지 않습니다. 대신 단계적인 힌트, 보충 설명, 비유, 그리고 '역질문(Socratic Questioning)'을 제공하여 학습자가 직접 답을 도출하고 사고를 넓히도록 안내합니다.
+      <div class="flex-1 overflow-y-auto">
+        <div class="w-full aspect-[4/3] bg-emerald-50 relative overflow-hidden">
+          <img id="detailImg" class="w-full h-full object-cover" alt="" loading="lazy">
+          <div id="detailImgFallback" class="hidden absolute inset-0 plant-photo-fallback flex flex-col items-center justify-center text-emerald-400 gap-2">
+            <i class="fa-solid fa-image text-4xl"></i>
+            <p class="text-xs font-medium text-emerald-500">사진을 불러올 수 없습니다</p>
+          </div>
+        </div>
 
-# Core Rules (수행 규칙)
-1. **정답 제공 엄금 (No Direct Answers)**: 학습자가 직접적인 답이나 결론을 요구하더라도 절대 바로 말해주지 마세요.
-2. **단계적 힌트 및 역질문 제공**:
-   - 1단계 (기반 확인): 학습자가 이미 알고 있는 기본 개념이나 경험을 확인하는 역질문.
-   - 2단계 (힌트 및 비유): 문제 해결의 핵심 열쇠가 되는 비유나 예시 제공.
-   - 3단계 (원리 도출): 스스로 원리를 도출할 수 있도록 유도하는 직관적 질문.
-3. **긍정적 피드백 & 동기부여**: 학습자의 오답이나 불완전한 대답도 비판하지 말고, 정답에 가까운 지점을 칭찬한 뒤 질문으로 교정하세요.
-4. **사고의 확장 유도**: 학습자가 정답을 맞히더라도 대화를 끝내지 말고, "만약 조건이 ~게 바뀐다면 어떻게 될까요?"와 같은 추가 탐구 질문을 던지세요.
-5. **어조 및 분량**: 밝고 지혜로우며 친절한 어조를 유지하세요. 한 번에 던지는 질문은 1~2개로 제한하여 학습자가 부담스럽지 않게 만드세요. 한국어로 다정하게 대답하세요.`;
+        <div class="p-5 max-w-2xl mx-auto pop-in" id="detailBody">
+          <div class="flex items-start justify-between gap-3 mb-1">
+            <h2 id="detailName" class="text-2xl font-extrabold text-slate-900"></h2>
+            <span id="detailId" class="flex-shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full mt-1"></span>
+          </div>
+          <p id="detailSci" class="text-sm italic text-slate-400 mb-4"></p>
 
-        // --- State Management ---
-        let chatHistory = []; // Conversation turns for Gemini API
-        let ttsEnabled = false;
-        const apiKey = ""; // Gemini API key provided by Canvas environment automatically if empty
-        const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-        const ttsApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+          <div class="flex flex-wrap gap-2 mb-5" id="detailMeta"></div>
 
-        // DOM Elements
-        const chatBox = document.getElementById('chatBox');
-        const chatForm = document.getElementById('chatForm');
-        const userInput = document.getElementById('userInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const ttsToggleBtn = document.getElementById('ttsToggleBtn');
-        const ttsIcon = document.getElementById('ttsIcon');
-        const ttsStatusText = document.getElementById('ttsStatusText');
-        const resetBtn = document.getElementById('resetBtn');
-        const subjectSelect = document.getElementById('subjectSelect');
-        const charCounter = document.getElementById('charCounter');
-        const notebook = document.getElementById('notebook');
-        const saveNoteBtn = document.getElementById('saveNoteBtn');
-        const noteStatus = document.getElementById('noteStatus');
+          <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-5">
+            <h3 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-book-open text-emerald-500"></i> 식물 설명
+            </h3>
+            <p id="detailDesc" class="text-sm leading-relaxed text-slate-700"></p>
+          </div>
 
-        // Character counter
-        userInput.addEventListener('input', () => {
-            charCounter.textContent = `${userInput.value.length}자`;
-            // Auto-resize
-            userInput.style.height = 'auto';
-            userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
-        });
+          <h3 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-cloud-sun text-emerald-500"></i> 관측 지점 연평균 환경
+          </h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4">
+            <div class="bg-white border border-slate-100 rounded-xl p-3 text-center shadow-sm">
+              <i class="fa-solid fa-temperature-half text-rose-400 mb-1"></i>
+              <p id="statTemp" class="text-sm font-bold text-slate-800"></p>
+              <p class="text-[10px] text-slate-400">기온</p>
+            </div>
+            <div class="bg-white border border-slate-100 rounded-xl p-3 text-center shadow-sm">
+              <i class="fa-solid fa-droplet text-sky-400 mb-1"></i>
+              <p id="statHumidity" class="text-sm font-bold text-slate-800"></p>
+              <p class="text-[10px] text-slate-400">습도</p>
+            </div>
+            <div class="bg-white border border-slate-100 rounded-xl p-3 text-center shadow-sm">
+              <i class="fa-solid fa-cloud-rain text-blue-400 mb-1"></i>
+              <p id="statRain" class="text-sm font-bold text-slate-800"></p>
+              <p class="text-[10px] text-slate-400">강수량</p>
+            </div>
+            <div class="bg-white border border-slate-100 rounded-xl p-3 text-center shadow-sm">
+              <i class="fa-solid fa-sun text-amber-400 mb-1"></i>
+              <p id="statSun" class="text-sm font-bold text-slate-800"></p>
+              <p class="text-[10px] text-slate-400">일조량</p>
+            </div>
+          </div>
 
-        // Enter key to submit (Shift+Enter for newline)
-        userInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                chatForm.dispatchEvent(new Event('submit'));
-            }
-        });
+          <div class="flex items-center justify-between gap-3 pt-2 pb-6">
+            <button id="prevPlantBtn" class="flex-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl py-3 transition-colors flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-chevron-left"></i> 이전 식물
+            </button>
+            <button id="nextPlantBtn" class="flex-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl py-3 transition-colors flex items-center justify-center gap-1.5">
+              다음 식물 <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-        // Sample Question Buttons
-        document.querySelectorAll('.sample-q-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                userInput.value = btn.textContent.trim();
-                userInput.dispatchEvent(new Event('input'));
-                chatForm.dispatchEvent(new Event('submit'));
-            });
-        });
+    <!-- List Drawer -->
+    <div id="listBackdrop" class="hidden absolute inset-0 bg-slate-900/40 z-[700]"></div>
+    <div id="listDrawer" class="sheet-slide absolute left-0 right-0 bottom-0 z-[800] translate-y-full bg-white rounded-t-3xl shadow-2xl flex flex-col" style="max-height:78%;">
+      <div class="flex-shrink-0 pt-3">
+        <div class="w-10 h-1.5 bg-slate-200 rounded-full mx-auto mb-3"></div>
+        <div class="px-4 pb-3 flex items-center gap-2">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
+            <input id="searchInput" type="text" placeholder="식물 이름으로 검색..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400">
+          </div>
+          <button id="closeListBtn" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 flex-shrink-0">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+      <div id="plantList" class="overflow-y-auto px-4 pb-6 grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+    </div>
+  </div>
+</div>
 
-        // Reset Chat
-        resetBtn.addEventListener('click', () => {
-            chatHistory = [];
-            chatBox.innerHTML = `
-                <div class="flex gap-3.5 items-start">
-                    <div class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-md">
-                        소
-                    </div>
-                    <div class="chat-bubble-tutor rounded-2xl rounded-tl-none p-4 max-w-[85%] shadow-sm">
-                        <div class="flex items-center justify-between mb-1.5 border-b border-slate-200/60 pb-1">
-                            <span class="font-semibold text-xs text-indigo-900">소크라테스 튜터</span>
-                            <span class="text-[10px] text-indigo-500 font-medium bg-indigo-50 px-2 py-0.5 rounded-full">지적 탐구 모드</span>
-                        </div>
-                        <div class="text-sm text-slate-700 leading-relaxed space-y-2">
-                            <p>새로운 대화가 시작되었습니다! 무엇이든 물어보세요. 함께 사고를 확장시켜 봅시다.</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
+<script>
+const PLANTS = [{"id":"P001","name":"익모초","date":"2026.05.29","photoId":"1OED0YUF115PsGMzMxL71p6H0IL99FSVa","lat":37.509277,"lng":126.956363,"sciName":"Leonurus japonicus Houtt.","desc":"들에 자라는 꿀풀과 두해살이풀로, 예로부터 산후 부인병 약재로 쓰여 '익모(益母)'라는 이름이 붙었습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P002","name":"벚나무","date":"2026.05.29","photoId":"1w0Ego_jHhZA8jCnhl7AVMjEG7dzDI3CB","lat":37.509913,"lng":126.956013,"sciName":"Prunus serrulata Lindl. f. spontanea (Maxim.) Chin S.Chang","desc":"봄에 연분홍 꽃이 잎보다 먼저 또는 함께 피는 장미과 낙엽큰키나무입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P003","name":"물푸레나무","date":"2026.05.29","photoId":"1ncZfCdxNvwLKeKgAJtuDlFTkzhtMedCD","lat":37.509277,"lng":126.956363,"sciName":"Fraxinus rhynchophylla Hance","desc":"가지를 물에 담그면 물이 푸르게 변한다 하여 이름 붙은, 목재가 단단해 도구·운동기구에 쓰이는 낙엽교목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P004","name":"광나무","date":"2026.05.29","photoId":"1RrBvomYTJS_gRsRUZ3GcdSPvssXYu8J0","lat":37.509913,"lng":126.956013,"sciName":"Ligustrum japonicum Thunb.","desc":"잎에 광택이 도는 남부지방 상록관목으로, 울타리나 정원수로 흔히 심습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P005","name":"물쑥","date":"2026.05.29","photoId":"1-o7UMilPPZngmHOnKv12AQkKuDPGE7Ug","lat":37.5099131,"lng":126.9560131,"sciName":"Artemisia selengensis Turcz. ex Besser","desc":"강가나 습지에서 자라는 국화과 여러해살이풀로, 어린순을 나물로 먹습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P006","name":"황종화","date":"2026.05.29","photoId":"1mhphvewgkJbs0R8-7T59MekQqwdRmxux","lat":37.509305,"lng":126.95654,"sciName":"Tecoma stans (L.) Juss. ex Kunth","desc":"트럼펫 모양의 밝은 노란색 꽃이 오래 피어 관상용으로 많이 심는 능소화과 상록성 나무로, 열매는 초반엔 녹색을 띠지만 자라면서 회갈색으로 변합니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P007","name":"옥잠화","date":"2026.05.29","photoId":"1KRXU8u3Mts0s8ZLQerRQ-b-xPn6Ix8d_","lat":37.509913,"lng":126.956913,"sciName":"Hosta plantaginea (Lam.) Asch.","desc":"여름에 향기로운 흰 꽃이 피는 비비추 종류로, 꽃봉오리가 옥비녀를 닮아 붙은 이름입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P008","name":"개망초","date":"2026.05.29","photoId":"19OT20kqczPsE6pU_8rjasSceWQoMWt2Y","lat":37.51002,"lng":126.955467,"sciName":"Erigeron annuus (L.) Desf.","desc":"들판 어디서나 흔한 국화과 두해살이풀로, 흰 혀꽃과 노란 통꽃이 계란프라이처럼 보입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P009","name":"산딸나무","date":"2026.05.29","photoId":"1VDynz-QLwVFiA4l817R5SEJbacE0oNn9","lat":37.509913,"lng":126.956013,"sciName":"Cornus kousa Bürger ex Hance","desc":"흰 십자 모양 총포가 꽃처럼 보이고 가을에 딸기 같은 붉은 열매가 달리는 층층나무과 낙엽교목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P010","name":"담쟁이덩굴","date":"2026.05.29","photoId":"1fb_8sJ-UCVMwEZ3nfoqctV0YWD4C72Wv","lat":37.510969,"lng":126.955074,"sciName":"Parthenocissus tricuspidata (Siebold & Zucc.) Planch.","desc":"흡착 뿌리로 벽이나 나무를 타고 오르는 포도과 덩굴식물로, 가을 단풍이 붉습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P011","name":"맥문동","date":"2026.05.29","photoId":"1SM5qkhB7hsPHQbF_wassNXagtttJZxor","lat":37.509424,"lng":126.956121,"sciName":"Liriope muscari (Decne.) L.H.Bailey","desc":"그늘에서도 잘 자라 지피식물로 많이 쓰이며, 여름에 보라색 꽃이 이삭처럼 핍니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P012","name":"철쭉","date":"2026.05.29","photoId":"1Rvt3T5TZgf7WipdlXXwH3aICg64WAxSH","lat":37.509424,"lng":126.956216,"sciName":"Rhododendron schlippenbachii Maxim.","desc":"봄에 연분홍 꽃이 피는 진달래과 낙엽관목으로, 진달래와 달리 꽃에 독성이 있어 먹지 않습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P013","name":"박쥐나무","date":"2026.05.29","photoId":"16NUuxNZvMDxZSdQkrBr1GEEE9LBuw-lN","lat":37.509424,"lng":126.9562161,"sciName":"Alangium platanifolium (Siebold & Zucc.) Harms var. trilobum (Miq.) Ohwi","desc":"잎이 박쥐 날개처럼 갈라진 모양이라 이름 붙은 낙엽관목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P014","name":"댕강나무","date":"2026.05.29","photoId":"1Rb8OHtQ9qZ-QpNR8k7qpjubTvYerF4nr","lat":37.5094241,"lng":126.9562162,"sciName":"Zabelia tyaihyonii (Nakai) Hisauti & H.Hara","desc":"가지를 꺾으면 '댕강' 소리가 난다 하여 붙은 이름으로, 향기로운 연분홍 꽃이 피는 인동과 관목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P015","name":"뽕나무","date":"2026.05.29","photoId":"1DcLb3HoqWi0ggfNADx0Y20MSN_JS3EgU","lat":37.5094243,"lng":126.9562163,"sciName":"Morus alba L.","desc":"에의 먹이가 되는 잎과 검붉은 열매 '오디'로 잘 알려진 낙엽교목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P016","name":"서양등골나무","date":"2026.06.05","photoId":"1IQRQNGt1Ebi-Ajpz7s59PTkx6fx26j3P","lat":37.509781,"lng":126.9578813,"sciName":"Ageratina altissima (L.) R.M.King & H.Rob.","desc":"북미 원산의 생태계교란 외래식물로, 가을에 흰 꽃이 무리지어 핍니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P017","name":"메꽃","date":"2026.06.05","photoId":"1jHKClF2KzvDno8310Z9MmJD9gvi2iM0J","lat":37.50984,"lng":126.956679,"sciName":"Calystegia pubescens Lindl.","desc":"들에서 분홍빛 나팔 모양 꽃을 피우는 덩굴성 여러해살이풀입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P018","name":"쑥","date":"2026.06.05","photoId":"1wmQ0x6CB85b620D0Q0f5euDTKa9Saz5E","lat":37.509555,"lng":126.956702,"sciName":"Artemisia indica Willd.","desc":"떡·국·약재로 두루 쓰이는 국화과 여러해살이풀로 특유의 향이 강합니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P019","name":"고들빼기","date":"2026.06.05","photoId":"1EKakfHRFh2PsQUaH_B5evCcXi455DirZ","lat":37.5097208,"lng":126.9572072,"sciName":"Crepidiastrum sonchifolium (Bunge) J.H.Pak & Kawano","desc":"쓴맛 나는 노란 꽃의 국화과 풀로, 김치나 나물로 먹습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P020","name":"띠","date":"2026.06.05","photoId":"1nPg-zmwVho5rTUCGYXkrUQcygGODi1nU","lat":37.509838,"lng":126.956776,"sciName":"Imperata cylindrica (L.) Raeusch.","desc":"흰 솜털 같은 꽃이삭이 달리는 볏과 여러해살이풀로, 뿌리(백모근)를 약으로 씁니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P021","name":"펜둘라사초","date":"2026.06.05","photoId":"1j23w5ESI0bp5mWNh3CED47Oje64Ic7Su","lat":37.50964,"lng":126.956638,"sciName":"Carex pendula Huds.","desc":"꽃이삭이 길게 늘어지는 유럽 원산 사초과 식물로, 주로 조경용으로 식재합니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P022","name":"왕고들빼기","date":"2026.06.05","photoId":"1cadoOo3SZ99-cHNn6oILoeRq-EaoOBu7","lat":37.5098016,"lng":126.9571817,"sciName":"Lactuca indica L.","desc":"키가 크게 자라는 국화과 풀로, 연한 잎을 쌈채소로 먹습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P023","name":"개회향","date":"2026.06.05","photoId":"11uNQ_hCR9qi8Q3yuDSr-4Id066xX9NGA","lat":37.5098992,"lng":126.9570553,"sciName":"Ligusticum tachiroei (Franch. & Sav.) M.Hiroe & Constance","desc":"산지 바위틈에 자라는 미나리과 여러해살이풀입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P024","name":"정금나무","date":"2026.06.05","photoId":"1CrZig2fMqVOUCDj4QBBeZhE4g7Q-spxh","lat":37.5097298,"lng":126.9572072,"sciName":"Vaccinium oldhamii Miq.","desc":"블루베리와 같은 진달래과로, 가을에 검게 익는 열매를 먹을 수 있습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P025","name":"사철나무","date":"2026.06.05","photoId":"1gh2uFx7e1MNaGXRHESrXUatYX7alrU-Z","lat":37.51003,"lng":126.956544,"sciName":"Euonymus japonicus Thunb.","desc":"사철 푸른 잎을 가진 상록관목으로 생울타리에 널리 쓰입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P026","name":"참나리","date":"2026.06.05 ","photoId":"1QJ25QLs2V0Epnaf3rgrcLWwSiY0xYktl","lat":37.509754,"lng":126.956546,"sciName":"Lilium lancifolium Thunb.","desc":"주황색 꽃잎에 검은 점이 박혀 뒤로 말리며, 잎겨드랑이에 검은 주아가 달리는 백합과 식물입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P027","name":"찔레나무","date":"2026.06.05","photoId":"1qNB4AhgfX_SZrJfN5s8W1xAGfJ_dTF8z","lat":37.509824,"lng":126.9567505,"sciName":"Rosa multiflora THUNB.","desc":"흰 꽃이 무리지어 피는 야생 장미로, 가지에 가시가 많습니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P028","name":"왕바랭이","date":"2026.06.05","photoId":"158EdKmBguBJbaPc5kXF4W9hs1NZ3jnaZ","lat":37.5097298,"lng":126.9572072,"sciName":"Eleusine indica (L.) Gaertn.","desc":"길가나 밭에 흔한 볏과 한해살이풀로 대표적인 잡초입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P029","name":"눈향나무","date":"2026.06.05","photoId":"1ibW7yd5r52JbhsnnlI69RPWHNDIqnm3c","lat":37.509167,"lng":126.956303,"sciName":"Juniperus chinensis L. var. sargentii A.Henry","desc":"고산지대에서 땅에 누워 자라는 향나무 종류입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P030","name":"호밀풀","date":"2026.06.05","photoId":"1txPrphplAUBuj6ct2TyTVNHGrtuI8VaL","lat":37.509824,"lng":126.9567505,"sciName":"Lolium perenne L.","desc":"목초·잔디용으로 심는 볏과 식물로 영문명은 perennial ryegrass입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P031","name":"큰방가지똥","date":"2026.06.05","photoId":"1NMigY8xj-0XYmZDoq22dzGgaOX8PLmXQ","lat":37.5097289,"lng":126.9567506,"sciName":"Sonchus asper (L.) Hill","desc":"잎 가장자리에 가시가 있는 국화과 한해살이 잡초입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P032","name":"코스모스","date":"2026.06.05","photoId":"18E_bjiMZgCJ4z-RGgRmRsg8ecI1DYi2x","lat":37.509843,"lng":126.956963,"sciName":"Cosmos bipinnatus Cav.","desc":"가을에 분홍·흰색 꽃이 피는 멕시코 원산의 국화과 한해살이풀입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P033","name":"나문재","date":"2026.06.05","photoId":"1U_ujbgg-tKctezIEXLq0vMnZnoC8quRO","lat":37.509678,"lng":126.956774,"sciName":"Suaeda glauca (Bunge) Bunge","desc":"바닷가 갯벌에 자라는 명아주과 염생식물로, 가을에 붉게 물듭니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P034","name":"서양금혼초","date":"2026.06.05","photoId":"1y55m1JBMSp2tBpgxY77CcgKEDF7P8G5v","lat":37.5100375,"lng":126.9565299,"sciName":"Hypochaeris radicata L.","desc":"유럽 원산의 생태계교란식물로, 민들레와 비슷한 노란 꽃이 핍니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0},{"id":"P035","name":"두릅나무","date":"2026.06.05","photoId":"1FD1tJYocCH1_A97rv0CPrPw7U3bGyFRa","lat":37.51002191,"lng":126.9566631,"sciName":"Aralia elata (Miq.) Seem.","desc":"봄에 돋는 새순(두릅)을 나물로 먹는 두릅나무과 낙엽관목입니다.","temp":12.8,"humidity":61.8,"rain":1417.9,"sun":2066.0}];
 
-        // Toggle TTS
-        ttsToggleBtn.addEventListener('click', () => {
-            ttsEnabled = !ttsEnabled;
-            if (ttsEnabled) {
-                ttsIcon.className = "fa-solid fa-volume-high text-indigo-600";
-                ttsStatusText.textContent = "음성 캪";
-                ttsStatusText.className = "hidden sm:inline text-indigo-600 font-semibold";
-                ttsToggleBtn.classList.add('bg-indigo-50', 'border-indigo-300');
-            } else {
-                ttsIcon.className = "fa-solid fa-volume-xmark text-slate-400";
-                ttsStatusText.textContent = "음성 끔";
-                ttsStatusText.className = "hidden sm:inline text-slate-600";
-                ttsToggleBtn.classList.remove('bg-indigo-50', 'border-indigo-300');
-            }
-        });
+/* ---------- helpers ---------- */
+function photoUrl(id, attempt){
+  if(attempt === 0) return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+  return `https://lh3.googleusercontent.com/d/${id}=w1000`;
+}
+function fmt(n, unit, digits=1){
+  if(n === null || n === undefined) return '-';
+  return `${Number(n).toFixed(digits)}${unit}`;
+}
+function escapeHtml(str){
+  return String(str||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
-        // Save Note
-        saveNoteBtn.addEventListener('click', () => {
-            localStorage.setItem('socratic_notes', notebook.value);
-            noteStatus.textContent = "저장되었습니다! ✓";
-            setTimeout(() => { noteStatus.textContent = ""; }, 2500);
-        });
-        // Load note on start
-        if (localStorage.getItem('socratic_notes')) {
-            notebook.value = localStorage.getItem('socratic_notes');
-        }
+/* ---------- map setup ---------- */
+const lats = PLANTS.map(p=>p.lat), lngs = PLANTS.map(p=>p.lng);
+const south = Math.min(...lats) - 0.0009, north = Math.max(...lats) + 0.0009;
+const west  = Math.min(...lngs) - 0.0009, east  = Math.max(...lngs) + 0.0009;
+const centerLat = (Math.min(...lats)+Math.max(...lats))/2;
+const centerLng = (Math.min(...lngs)+Math.max(...lngs))/2;
+const schoolBounds = L.latLngBounds([south, west], [north, east]);
 
-        // Form Submit
-        chatForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const text = userInput.value.trim();
-            if (!text) return;
+const map = L.map('map', {
+  center: [centerLat, centerLng],
+  zoom: 18,
+  minZoom: 16,
+  maxZoom: 21,
+  maxBounds: schoolBounds.pad(0.6),
+  maxBoundsViscosity: 0.9,
+  zoomControl: false
+});
+L.control.zoom({ position:'bottomleft' }).addTo(map);
 
-            // Clear input
-            userInput.value = '';
-            userInput.style.height = 'auto';
-            charCounter.textContent = '0자';
+function googleLayer(type){
+  return L.tileLayer(`https://{s}.google.com/vt/lyrs=${type}&x={x}&y={y}&z={z}`, {
+    subdomains: ['mt0','mt1','mt2','mt3'],
+    attribution: '&copy; Google Maps',
+    maxZoom: 21
+  });
+}
+const roadmapLayer = googleLayer('m');
+const satelliteLayer = googleLayer('y');
+roadmapLayer.addTo(map);
+let currentLayer = 'road';
 
-            // Add user message to UI
-            appendUserMessage(text);
+document.getElementById('btnRoadmap').addEventListener('click', ()=>{
+  if(currentLayer==='road') return;
+  map.removeLayer(satelliteLayer); roadmapLayer.addTo(map); currentLayer='road';
+  setLayerBtnStyle();
+});
+document.getElementById('btnSatellite').addEventListener('click', ()=>{
+  if(currentLayer==='sat') return;
+  map.removeLayer(roadmapLayer); satelliteLayer.addTo(map); currentLayer='sat';
+  setLayerBtnStyle();
+});
+function setLayerBtnStyle(){
+  const road = document.getElementById('btnRoadmap');
+  const sat = document.getElementById('btnSatellite');
+  const active = 'px-3 py-2 bg-emerald-600 text-white transition-colors';
+  const inactive = 'px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors';
+  road.className = currentLayer==='road' ? active : inactive;
+  sat.className = currentLayer==='sat' ? active : inactive;
+}
 
-            // Append subject context if selected
-            let formattedText = text;
-            const subject = subjectSelect.value;
-            if (subject !== 'general') {
-                formattedText = `[분야: ${subjectSelect.options[subjectSelect.selectedIndex].text}] ${text}`;
-            }
+document.getElementById('recenterBtn').addEventListener('click', ()=>{
+  map.fitBounds(schoolBounds, { padding:[20,20] });
+});
 
-            // Update conversation history
-            chatHistory.push({ role: 'user', parts: [{ text: formattedText }] });
+/* markers + clustering */
+const cluster = L.markerClusterGroup({
+  maxClusterRadius: 42,
+  spiderfyOnMaxZoom: true,
+  showCoverageOnHover: false,
+  disableClusteringAtZoom: 21
+});
+const markerById = {};
 
-            // Show loading
-            loadingIndicator.classList.remove('hidden');
-            sendBtn.disabled = true;
+function makeIcon(active){
+  return L.divIcon({
+    className: '',
+    html: `<div class="plant-pin${active?' active':''}"><i class="fa-solid fa-seedling"></i></div>`,
+    iconSize: [34,34],
+    iconAnchor: [17,32],
+    popupAnchor: [0,-30]
+  });
+}
 
-            try {
-                const responseText = await callGeminiApiWithRetry();
-                
-                // Save assistant turn
-                chatHistory.push({ role: 'model', parts: [{ text: responseText }] });
+PLANTS.forEach((p, idx) => {
+  const marker = L.marker([p.lat, p.lng], { icon: makeIcon(false) });
+  marker.bindTooltip(p.name, { direction:'top', offset:[0,-28] });
+  marker.on('click', () => openDetail(idx));
+  markerById[p.id] = marker;
+  cluster.addLayer(marker);
+});
+map.addLayer(cluster);
+map.fitBounds(schoolBounds, { padding:[20,20] });
 
-                // Render assistant response
-                appendTutorMessage(responseText);
+let activeMarkerId = null;
+function highlightMarker(id){
+  if(activeMarkerId && markerById[activeMarkerId]) markerById[activeMarkerId].setIcon(makeIcon(false));
+  if(id && markerById[id]) markerById[id].setIcon(makeIcon(true));
+  activeMarkerId = id;
+}
 
-                // Play TTS if enabled
-                if (ttsEnabled) {
-                    playTtsAudio(responseText);
-                }
+/* ---------- detail screen ---------- */
+const detailScreen = document.getElementById('detailScreen');
+const detailImg = document.getElementById('detailImg');
+const detailImgFallback = document.getElementById('detailImgFallback');
+let currentIndex = -1;
 
-            } catch (error) {
-                console.error("API Call Error:", error);
-                appendTutorMessage("죄송합니다. 생각을 정리하는 도중 잠시 문제가 생겼습니다. 다시 한번 말씀해 주시겠어요?");
-            } finally {
-                loadingIndicator.classList.add('hidden');
-                sendBtn.disabled = false;
-                scrollToBottom();
-            }
-        });
+function openDetail(idx){
+  currentIndex = idx;
+  const p = PLANTS[idx];
+  highlightMarker(p.id);
 
-        async function callGeminiApiWithRetry(maxRetries = 3) {
-            const payload = {
-                contents: chatHistory,
-                systemInstruction: {
-                    parts: [{ text: SOCRATIC_SYSTEM_PROMPT }]
-                }
-            };
+  document.getElementById('detailIndex').textContent = `${idx+1} / ${PLANTS.length}`;
+  document.getElementById('detailName').textContent = p.name;
+  document.getElementById('detailId').textContent = p.id;
+  document.getElementById('detailSci').textContent = p.sciName || '';
+  document.getElementById('detailDesc').textContent = p.desc || '설명 정보가 없습니다.';
 
-            let delay = 1000;
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    const response = await fetch(geminiApiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+  const meta = document.getElementById('detailMeta');
+  meta.innerHTML = `
+    <span class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+      <i class="fa-regular fa-calendar mr-1"></i>${(p.date||'').trim() || '날짜 미상'}
+    </span>
+    <span class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+      <i class="fa-solid fa-location-dot mr-1"></i>${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}
+    </span>
+  `;
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+  document.getElementById('statTemp').textContent = fmt(p.temp, '℃');
+  document.getElementById('statHumidity').textContent = fmt(p.humidity, '%');
+  document.getElementById('statRain').textContent = fmt(p.rain, 'mm', 0);
+  document.getElementById('statSun').textContent = fmt(p.sun, 'h', 0);
 
-                    const data = await response.json();
-                    const candidate = data.candidates?.[0];
-                    if (candidate && candidate.content?.parts?.[0]?.text) {
-                        return candidate.content.parts[0].text;
-                    } else {
-                        throw new Error("Invalid response format from Gemini API");
-                    }
-                } catch (err) {
-                    if (i === maxRetries - 1) throw err;
-                    await new Promise(res => setTimeout(res, delay));
-                    delay *= 2; // Exponential backoff
-                }
-            }
-        }
+  detailImgFallback.classList.add('hidden');
+  detailImg.classList.remove('hidden');
+  detailImg.dataset.attempt = '0';
+  detailImg.src = p.photoId ? photoUrl(p.photoId, 0) : '';
+  detailImg.alt = p.name;
+  if(!p.photoId){ showImgFallback(); }
 
-        function appendUserMessage(messageText) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'flex gap-3.5 items-start justify-end';
-            msgDiv.innerHTML = `
-                <div class="chat-bubble-user text-white rounded-2xl rounded-tr-none p-4 max-w-[85%] shadow-sm">
-                    <p class="text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(messageText)}</p>
-                </div>
-                <div class="w-9 h-9 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm">
-                    나
-                </div>
-            `;
-            chatBox.appendChild(msgDiv);
-            scrollToBottom();
-        }
+  const body = document.getElementById('detailBody');
+  body.classList.remove('pop-in'); void body.offsetWidth; body.classList.add('pop-in');
 
-        function appendTutorMessage(messageText) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'flex gap-3.5 items-start';
-            
-            // Format HTML markdown
-            const formattedContent = marked.parse(messageText);
+  detailScreen.classList.remove('translate-x-full');
+  closeList();
+}
 
-            msgDiv.innerHTML = `
-                <div class="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-md">
-                    소
-                </div>
-                <div class="chat-bubble-tutor rounded-2xl rounded-tl-none p-4 max-w-[85%] shadow-sm">
-                    <div class="flex items-center justify-between mb-1.5 border-b border-slate-200/60 pb-1">
-                        <span class="font-semibold text-xs text-indigo-900">소크라테스 튜터</span>
-                        <div class="flex items-center gap-1">
-                            <button onclick="speakText(this)" data-text="${escapeHtml(messageText)}" title="음성 듣기" class="text-slate-400 hover:text-indigo-600 text-xs px-1.5 py-0.5 rounded hover:bg-slate-200/60 transition-colors">
-                                <i class="fa-solid fa-volume-low"></i>
-                            </button>
-                            <button onclick="copyToClipboard(this)" data-text="${escapeHtml(messageText)}" title="복사" class="text-slate-400 hover:text-indigo-600 text-xs px-1.5 py-0.5 rounded hover:bg-slate-200/60 transition-colors">
-                                <i class="fa-solid fa-copy"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="text-sm text-slate-700 leading-relaxed space-y-2 prose prose-slate prose-sm max-w-none">
-                        ${formattedContent}
-                    </div>
-                </div>
-            `;
-            chatBox.appendChild(msgDiv);
-            scrollToBottom();
-        }
+function showImgFallback(){
+  detailImg.classList.add('hidden');
+  detailImgFallback.classList.remove('hidden');
+}
+detailImg.addEventListener('error', () => {
+  const attempt = Number(detailImg.dataset.attempt || '0');
+  const p = PLANTS[currentIndex];
+  if(attempt === 0 && p && p.photoId){
+    detailImg.dataset.attempt = '1';
+    detailImg.src = photoUrl(p.photoId, 1);
+  } else {
+    showImgFallback();
+  }
+});
 
-        function scrollToBottom() {
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+function closeDetail(){
+  detailScreen.classList.add('translate-x-full');
+  highlightMarker(null);
+}
+document.getElementById('backBtn').addEventListener('click', closeDetail);
 
-        function escapeHtml(str) {
-            return str
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
+document.getElementById('showOnMapBtn').addEventListener('click', () => {
+  const p = PLANTS[currentIndex];
+  closeDetail();
+  setTimeout(() => {
+    map.setView([p.lat, p.lng], 20, { animate:true });
+  }, 150);
+});
 
-        window.copyToClipboard = function(btn) {
-            const text = btn.getAttribute('data-text');
-            const temp = document.createElement('textarea');
-            temp.value = text;
-            document.body.appendChild(temp);
-            temp.select();
-            document.execCommand('copy');
-            document.body.removeChild(temp);
+document.getElementById('prevPlantBtn').addEventListener('click', () => {
+  openDetail((currentIndex - 1 + PLANTS.length) % PLANTS.length);
+});
+document.getElementById('nextPlantBtn').addEventListener('click', () => {
+  openDetail((currentIndex + 1) % PLANTS.length);
+});
 
-            const origIcon = btn.innerHTML;
-            btn.innerHTML = `<i class="fa-solid fa-check text-emerald-600"></i>`;
-            setTimeout(() => { btn.innerHTML = origIcon; }, 1500);
-        };
+/* ---------- list drawer ---------- */
+const listDrawer = document.getElementById('listDrawer');
+const listBackdrop = document.getElementById('listBackdrop');
+const plantListEl = document.getElementById('plantList');
 
-        window.speakText = function(btn) {
-            const text = btn.getAttribute('data-text');
-            playTtsAudio(text);
-        };
+function renderList(filter=''){
+  const f = filter.trim().toLowerCase();
+  plantListEl.innerHTML = '';
+  PLANTS.forEach((p, idx) => {
+    if(f && !p.name.toLowerCase().includes(f) && !(p.sciName||'').toLowerCase().includes(f)) return;
+    const item = document.createElement('button');
+    item.className = 'flex items-center gap-3 text-left bg-slate-50 hover:bg-emerald-50 border border-slate-100 hover:border-emerald-200 rounded-xl p-2.5 transition-colors';
+    item.innerHTML = `
+      <div class="w-11 h-11 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 flex-shrink-0 overflow-hidden">
+        ${p.photoId ? `<img src="${photoUrl(p.photoId,0)}" class="w-full h-full object-cover" onerror="this.remove()">` : `<i class="fa-solid fa-seedling"></i>`}
+      </div>
+      <div class="min-w-0">
+        <p class="text-sm font-bold text-slate-800 truncate">${escapeHtml(p.name)}</p>
+        <p class="text-[11px] text-slate-400 italic truncate">${escapeHtml(p.sciName||'')}</p>
+      </div>
+    `;
+    item.addEventListener('click', () => openDetail(idx));
+    plantListEl.appendChild(item);
+  });
+  if(!plantListEl.children.length){
+    plantListEl.innerHTML = `<p class="col-span-full text-center text-sm text-slate-400 py-8">검색 결과가 없습니다.</p>`;
+  }
+}
+renderList();
 
-        async function playTtsAudio(text) {
-            // Remove markdown syntax for cleaner speech
-            const cleanText = text.replace(/[*_#`~]/g, '');
-
-            try {
-                const payload = {
-                    contents: [{ parts: [{ text: "천천히 따뜻하게 말해줘: " + cleanText.substring(0, 300) }] }],
-                    generationConfig: {
-                        responseModalities: ["AUDIO"],
-                        speechConfig: {
-                            voiceConfig: {
-                                prebuiltVoiceConfig: { voiceName: "Kore" }
-                            }
-                        }
-                    },
-                    model: "gemini-2.5-flash-preview-tts"
-                };
-
-                const response = await fetch(ttsApiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) throw new Error('TTS API failure');
-
-                const result = await response.json();
-                const part = result?.candidates?.[0]?.content?.parts?.[0];
-                const audioData = part?.inlineData?.data;
-                const mimeType = part?.inlineData?.mimeType;
-
-                if (audioData && mimeType && mimeType.startsWith("audio/")) {
-                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
-                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 24000;
-                    
-                    const pcmData = base64ToArrayBuffer(audioData);
-                    const pcm16 = new Int16Array(pcmData);
-                    const wavBlob = pcmToWav(pcm16, sampleRate);
-                    const audioUrl = URL.createObjectURL(wavBlob);
-                    
-                    const audio = new Audio(audioUrl);
-                    audio.play();
-                } else {
-                    // SpeechSynthesis fallback
-                    fallbackBrowserSpeech(cleanText);
-                }
-            } catch (err) {
-                console.warn("TTS fallback used:", err);
-                fallbackBrowserSpeech(cleanText);
-            }
-        }
-
-        function fallbackBrowserSpeech(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text.substring(0, 200));
-                utterance.lang = 'ko-KR';
-                utterance.rate = 0.95;
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        function base64ToArrayBuffer(base64) {
-            const binaryString = window.atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
-
-        function pcmToWav(pcm16Array, sampleRate) {
-            const buffer = new ArrayBuffer(44 + pcm16Array.length * 2);
-            const view = new DataView(buffer);
-
-            // RIFF chunk descriptor
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + pcm16Array.length * 2, true);
-            writeString(view, 8, 'WAVE');
-
-            // fmt sub-chunk
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true); // Subchunk1Size
-            view.setUint16(20, 1, true);  // AudioFormat (PCM = 1)
-            view.setUint16(22, 1, true);  // NumChannels (1 = mono)
-            view.setUint32(24, sampleRate, true); // SampleRate
-            view.setUint32(28, sampleRate * 2, true); // ByteRate
-            view.setUint16(32, 2, true);  // BlockAlign
-            view.setUint16(34, 16, true); // BitsPerSample
-
-            // data sub-chunk
-            writeString(view, 36, 'data');
-            view.setUint32(40, pcm16Array.length * 2, true);
-
-            // Write PCM audio samples
-            let index = 44;
-            for (let i = 0; i < pcm16Array.length; i++) {
-                view.setInt16(index, pcm16Array[i], true);
-                index += 2;
-            }
-
-            return new Blob([view], { type: 'audio/wav' });
-        }
-
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-    </script>
+function openList(){
+  listBackdrop.classList.remove('hidden');
+  listDrawer.classList.remove('translate-y-full');
+}
+function closeList(){
+  listBackdrop.classList.add('hidden');
+  listDrawer.classList.add('translate-y-full');
+}
+document.getElementById('listBtn').addEventListener('click', openList);
+document.getElementById('closeListBtn').addEventListener('click', closeList);
+listBackdrop.addEventListener('click', closeList);
+document.getElementById('searchInput').addEventListener('input', (e) => renderList(e.target.value));
+</script>
 </body>
 </html>
