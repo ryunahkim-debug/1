@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>동양중학교 식물지도</title>
+<meta name="description" content="서울 동작구 동양중학교에서 관찰한 식물 35종의 위치와 사진, 학명, 설명을 지도에서 찾아보는 식물지도입니다.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B1%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:ital,wght@0,400;1,400;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --green-900:#12351f; --green-800:#1b5132; --green-700:#227045; --green-600:#2f8b57;
+    --green-500:#4aa570; --green-100:#e3f2e8; --green-50:#f2f9f4; --accent:#d9642a;
+    --ink:#17251c; --ink-2:#4a5c50; --ink-3:#7b8c81;
+    --bg:#f6f8f6; --card:#fff; --line:#e2e9e4;
+    --shadow:0 1px 2px rgba(18,53,31,.06), 0 8px 24px rgba(18,53,31,.08);
+    --radius:16px; --header-h:60px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    -webkit-text-size-adjust:100%; overscroll-behavior:none;
+  }
+  button{font-family:inherit}
+  .sci-font{font-family:'Noto Serif KR',serif; font-style:italic}
+
+  /* ── 헤더 ─────────────────────────────────── */
+  .topbar{
+    height:var(--header-h); display:flex; align-items:center; gap:12px; padding:0 16px;
+    background:var(--green-800); color:#fff; position:relative; z-index:900;
+    box-shadow:0 2px 12px rgba(18,53,31,.18);
+  }
+  .brand{display:flex; align-items:center; gap:10px; min-width:0; overflow:hidden}
+  .brand-leaf{flex:none; font-size:22px; line-height:1}
+  .brand div{min-width:0}
+  .brand h1{margin:0; font-size:17px; font-weight:700; letter-spacing:-.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .brand p{margin:1px 0 0; font-size:11.5px; color:#b9d8c4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .topbar-right{margin-left:auto; flex:none; display:flex; align-items:center; gap:8px}
+  .chip, .count-chip{
+    background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.22); color:#fff;
+    font-size:12px; font-weight:500; padding:6px 11px; border-radius:999px; white-space:nowrap;
+  }
+  .chip{cursor:pointer; transition:background .15s}
+  .chip:hover{background:rgba(255,255,255,.26)}
+  .chip.on{background:#fff; color:var(--green-800); font-weight:700}
+
+  /* ── 지도 화면 ─────────────────────────────── */
+  #screen-map{position:fixed; inset:0; display:flex; flex-direction:column}
+  .workspace{flex:1; display:flex; min-height:0}
+  .map-col{flex:1; min-width:0; display:flex; flex-direction:column}
+  .map-wrap{flex:1; min-height:0; position:relative}
+  #map{position:absolute; inset:0; background:#dfe7e1}
+  .map-credit{
+    flex:none; padding:4px 11px; background:var(--card); border-top:1px solid var(--line);
+    font-size:10.5px; color:var(--ink-3); text-align:right;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .map-credit a{color:var(--ink-3)}
+  .map-note{
+    position:absolute; top:12px; right:12px; z-index:500; max-width:min(260px,58vw);
+    background:rgba(255,255,255,.95); border:1px solid var(--line); border-radius:13px;
+    padding:11px 13px; box-shadow:var(--shadow); pointer-events:none;
+  }
+  .map-note b{display:block; font-size:14px; color:var(--green-900)}
+  .map-note span{display:block; font-size:11.5px; color:var(--ink-2); margin-top:3px; line-height:1.55}
+  .map-fail{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:12px; padding:28px; text-align:center; background:var(--green-50);
+  }
+  .map-fail p{margin:0; font-size:13.5px; line-height:1.7; color:var(--ink-2); max-width:330px}
+
+  .sidebar{
+    width:336px; flex:none; background:var(--card); border-left:1px solid var(--line);
+    display:flex; flex-direction:column; min-height:0;
+  }
+  .side-head{padding:14px 16px 11px; border-bottom:1px solid var(--line)}
+  .side-title{font-size:12.5px; font-weight:700; color:var(--ink-2); margin:0 0 9px}
+  .search{position:relative}
+  .search input{
+    width:100%; padding:10px 12px 10px 34px; border:1px solid var(--line); border-radius:11px;
+    font-size:14px; background:var(--green-50); color:var(--ink); outline:none;
+  }
+  .search input:focus{border-color:var(--green-500); background:#fff; box-shadow:0 0 0 3px rgba(74,165,112,.15)}
+  .search svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-3)}
+  .plant-list{flex:1; overflow-y:auto; padding:8px; -webkit-overflow-scrolling:touch}
+  .plant-item{
+    display:flex; align-items:center; gap:11px; width:100%; text-align:left; padding:8px;
+    border:1px solid transparent; border-radius:12px; background:none; cursor:pointer;
+  }
+  .plant-item:hover{background:var(--green-50); border-color:var(--green-100)}
+  .plant-item.active{background:var(--green-100); border-color:var(--green-500)}
+  .pi-num{
+    flex:none; width:25px; height:25px; border-radius:8px; background:var(--green-700); color:#fff;
+    font-size:11.5px; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .plant-item.active .pi-num{background:var(--accent)}
+  .pi-thumb{flex:none; width:46px; height:46px; border-radius:10px; object-fit:cover; background:var(--green-100)}
+  .pi-text{min-width:0; flex:1; overflow:hidden}
+  .pi-name{display:block; font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .pi-sci{
+    display:block; font-size:11.5px; color:var(--ink-3); margin-top:1px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .empty{padding:28px 16px; text-align:center; color:var(--ink-3); font-size:13px}
+
+  .sheet-grip{display:none}
+  @media (max-width:860px){
+    :root{--header-h:56px}
+    .brand p{display:none}
+    .map-note{max-width:min(230px,52vw); padding:9px 11px}
+    .map-note b{font-size:13px}
+    .map-note span{font-size:11px}
+    .workspace{display:block; position:relative}
+    .map-col{position:absolute; inset:0 0 46% 0}
+    .sidebar{
+      position:absolute; left:0; right:0; bottom:0; width:auto; height:46%; border-left:none;
+      border-top:1px solid var(--line); border-radius:18px 18px 0 0; z-index:600;
+      box-shadow:0 -6px 24px rgba(18,53,31,.12); transition:height .25s ease;
+    }
+    .sidebar.collapsed{height:56px}
+    .sidebar.collapsed .side-head,.sidebar.collapsed .plant-list{display:none}
+    .sheet-grip{
+      display:flex; position:relative; align-items:center; justify-content:center; gap:7px;
+      width:100%; padding:15px 16px 9px; background:none; border:none; cursor:pointer;
+      font-size:13px; font-weight:700; color:var(--ink-2);
+    }
+    .sheet-grip::before{
+      content:''; position:absolute; top:6px; left:50%; transform:translateX(-50%);
+      width:38px; height:4px; border-radius:2px; background:var(--line);
+    }
+  }
+
+  /* ── 마커 ─────────────────────────────────── */
+  .pin{
+    width:22px; height:22px; border-radius:50%; background:var(--green-700); border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.4); color:#fff; font-size:11px; font-weight:700;
+    line-height:18px; text-align:center; cursor:pointer; transition:transform .12s, background .12s;
+  }
+  .pin:hover{transform:scale(1.18)}
+  .pin.on{background:var(--accent); transform:scale(1.35); box-shadow:0 2px 8px rgba(0,0,0,.5)}
+  .pin-school{
+    width:30px; height:30px; border-radius:50%; background:#fff; border:2.5px solid var(--green-900);
+    box-shadow:0 2px 7px rgba(0,0,0,.35); font-size:15px; line-height:26px; text-align:center;
+  }
+  .leaflet-div-icon{background:none; border:none}
+  .leaflet-container{font-family:inherit}
+  .leaflet-popup-content-wrapper{border-radius:12px}
+  .pop{min-width:152px; text-align:center}
+  .pop b{display:block; font-size:15px; margin-bottom:2px}
+  .pop i{display:block; font-size:11.5px; color:var(--ink-3); margin-bottom:9px}
+  .pop button{
+    width:100%; padding:8px 12px; border:none; border-radius:9px; cursor:pointer;
+    background:var(--green-700); color:#fff; font-size:13px; font-weight:700;
+  }
+
+  /* ── 상세 화면 ─────────────────────────────── */
+  #screen-detail{
+    position:fixed; inset:0; z-index:1000; background:var(--bg);
+    overflow-y:auto; -webkit-overflow-scrolling:touch; display:none;
+  }
+  #screen-detail.show{display:block}
+  .detail-bar{
+    position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:10px;
+    padding:10px 14px; background:rgba(246,248,246,.93); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .btn-back{
+    display:inline-flex; align-items:center; gap:7px; padding:9px 15px; border:none; border-radius:11px;
+    background:var(--green-800); color:#fff; font-size:14px; font-weight:700; cursor:pointer;
+    box-shadow:var(--shadow); transition:background .15s;
+  }
+  .btn-back:hover{background:var(--green-700)}
+  .detail-seq{margin-left:auto; font-size:12.5px; color:var(--ink-3); font-weight:500}
+  .detail-wrap{max-width:780px; margin:0 auto; padding:16px 16px 44px}
+
+  .hero{
+    position:relative; width:100%; height:min(54vh,430px); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow);
+    background:linear-gradient(160deg,#dcecdf,#c6dfcd);
+  }
+  .hero img{width:100%; height:100%; object-fit:contain; display:block}
+  .hero-fallback{
+    position:absolute; inset:0; display:none; flex-direction:column; align-items:center;
+    justify-content:center; gap:11px; padding:26px; text-align:center;
+  }
+  .hero-fallback.show{display:flex}
+  .hero-fallback .big{font-size:40px}
+  .hero-fallback p{margin:0; font-size:13px; line-height:1.65; color:var(--ink-2); max-width:340px}
+  .hero-badge{
+    position:absolute; top:12px; left:12px; padding:5px 11px; border-radius:999px;
+    background:rgba(18,53,31,.82); color:#fff; font-size:12px; font-weight:700;
+  }
+
+  .name-block{padding:20px 4px 6px}
+  .name-block h2{margin:0; font-size:28px; font-weight:900; letter-spacing:-.6px}
+  .name-block .sci{margin:6px 0 0; font-size:15px; color:var(--green-700); line-height:1.5}
+  .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
+  .tag{font-size:12px; font-weight:500; padding:5px 10px; border-radius:999px; background:var(--green-100); color:var(--green-800)}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:18px; margin-top:14px; box-shadow:var(--shadow);
+  }
+  .card h3{margin:0 0 10px; font-size:13px; font-weight:700; color:var(--green-700); letter-spacing:.3px}
+  .desc{margin:0; font-size:16px; line-height:1.85}
+  .kv{display:grid; grid-template-columns:96px 1fr; gap:10px 14px; font-size:14.5px; margin:0}
+  .kv dt{color:var(--ink-3); font-size:13.5px}
+  .kv dd{margin:0; font-weight:500}
+  .kv dd.mono{font-variant-numeric:tabular-nums; font-size:13.5px}
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+  .stat{background:var(--green-50); border-radius:12px; padding:12px 10px; text-align:center}
+  .stat .v{font-size:19px; font-weight:700; color:var(--green-800); font-variant-numeric:tabular-nums}
+  .stat .u{font-size:10.5px; color:var(--ink-3); margin-top:1px}
+  .stat .l{font-size:11.5px; color:var(--ink-2); margin-top:5px; font-weight:500}
+  .note{margin:10px 0 0; font-size:11.5px; color:var(--ink-3); line-height:1.6}
+
+  .links{display:flex; flex-wrap:wrap; gap:9px; margin-top:14px}
+  .link-btn{
+    display:inline-flex; align-items:center; gap:7px; padding:11px 15px; border-radius:11px;
+    border:1px solid var(--line); background:var(--card); color:var(--green-800);
+    font-size:13.5px; font-weight:700; text-decoration:none; cursor:pointer;
+  }
+  .link-btn:hover{background:var(--green-50); border-color:var(--green-500)}
+  .nav-row{display:flex; gap:10px; margin-top:22px}
+  .nav-btn{
+    flex:1; min-width:0; padding:13px 14px; border:1px solid var(--line); border-radius:12px;
+    background:var(--card); cursor:pointer; text-align:left; box-shadow:var(--shadow);
+  }
+  .nav-btn:hover{border-color:var(--green-500); background:var(--green-50)}
+  .nav-btn .lbl{font-size:11px; color:var(--ink-3); font-weight:500}
+  .nav-btn .nm{font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .nav-btn.next{text-align:right}
+  .btn-home{
+    width:100%; margin-top:12px; padding:16px; border:none; border-radius:14px; cursor:pointer;
+    background:var(--green-800); color:#fff; font-size:15.5px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:var(--shadow);
+  }
+  .btn-home:hover{background:var(--green-700)}
+
+  @media (max-width:560px){
+    .brand h1{font-size:15px}
+    .count-chip{display:none}
+    .chip{padding:6px 9px}
+  }
+
+  @media (max-width:600px){
+    .name-block h2{font-size:24px}
+    .desc{font-size:15px}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .kv{grid-template-columns:84px 1fr}
+    .hero{height:min(44vh,320px)}
+  }
+
+  /* ── 구글 지도 키 모달 ───────────────────────── */
+  .modal{position:fixed; inset:0; z-index:1200; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(18,53,31,.5)}
+  .modal.show{display:flex}
+  .modal-box{background:var(--card); border-radius:18px; padding:22px; max-width:440px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  .modal-box h3{margin:0 0 8px; font-size:18px}
+  .modal-box p{margin:0 0 12px; font-size:13.5px; line-height:1.7; color:var(--ink-2)}
+  .modal-box ol{margin:0 0 14px; padding-left:20px; font-size:13px; line-height:1.9; color:var(--ink-2)}
+  .modal-box input{width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:11px; font-size:14px; outline:none; margin-bottom:12px; font-family:ui-monospace,monospace}
+  .modal-box input:focus{border-color:var(--green-500)}
+  .modal-actions{display:flex; gap:9px; flex-wrap:wrap}
+  .modal-actions button{flex:1; min-width:108px; padding:12px; border-radius:11px; cursor:pointer; font-size:14px; font-weight:700; border:1px solid var(--line); background:var(--card); color:var(--ink-2)}
+  .modal-actions button.primary{background:var(--green-800); color:#fff; border-color:var(--green-800)}
+  .toast{
+    position:fixed; left:50%; bottom:22px; transform:translate(-50%,80px); z-index:1300;
+    background:var(--green-900); color:#fff; padding:12px 18px; border-radius:999px;
+    font-size:13.5px; opacity:0; transition:all .25s; max-width:88vw; text-align:center;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  .toast.show{transform:translate(-50%,0); opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ══════════ 화면 1 · 지도 ══════════ -->
+<div id="screen-map">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-leaf">🌱</span>
+      <div>
+        <h1>동양중학교 식물지도</h1>
+        <p>서울 동작구 · 우리 학교에서 만난 식물</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="count-chip">식물 <b id="count">0</b>종</span>
+      <button class="chip on" id="btn-base">위성</button>
+      <button class="chip" id="btn-gmap">구글 지도</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <div class="map-col">
+      <div class="map-wrap">
+        <div id="map"></div>
+        <div class="map-note">
+          <b>🏫 동양중학교</b>
+          <span>서울 동작구 · 초록색 번호를 누르면 그 식물의 사진과 학명, 설명이 나옵니다.</span>
+        </div>
+      </div>
+      <p class="map-credit" id="credit"></p>
+    </div>
+
+    <aside class="sidebar" id="sidebar">
+      <button class="sheet-grip" id="grip">식물 목록 <span id="grip-arrow">▾</span></button>
+      <div class="side-head">
+        <p class="side-title">식물 목록 · 이름을 누르면 자세히 볼 수 있어요</p>
+        <div class="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/>
+          </svg>
+          <input id="q" type="search" placeholder="식물 이름 · 학명 검색" autocomplete="off">
+        </div>
+      </div>
+      <div class="plant-list" id="list"></div>
+    </aside>
+  </div>
+</div>
+
+<!-- ══════════ 화면 2 · 식물 상세 ══════════ -->
+<div id="screen-detail" aria-hidden="true">
+  <div class="detail-bar">
+    <button class="btn-back" id="btn-back-top">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+      지도로 돌아가기
+    </button>
+    <span class="detail-seq" id="seq"></span>
+  </div>
+  <div class="detail-wrap" id="detail-body"></div>
+</div>
+
+<!-- 구글 지도 API 키 -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3>구글 지도로 보기</h3>
+    <p>구글 지도를 앱 안에 띄우려면 구글에서 발급하는 <b>Maps JavaScript API 키</b>가 필요합니다.
+       키가 없어도 지금 보이는 위성 지도로 모든 기능을 그대로 쓸 수 있습니다.</p>
+    <ol>
+      <li>Google Cloud Console에서 프로젝트를 만듭니다</li>
+      <li><b>Maps JavaScript API</b>를 사용 설정합니다</li>
+      <li>[사용자 인증 정보]에서 API 키를 만들어 아래에 붙여넣습니다</li>
+    </ol>
+    <input id="key-input" type="text" placeholder="AIza... 형식의 API 키" spellcheck="false">
+    <div class="modal-actions">
+      <button id="key-cancel">닫기</button>
+      <button id="key-clear">키 삭제</button>
+      <button class="primary" id="key-save">저장하고 적용</button>
+    </div>
+    <p class="note">키는 이 기기의 브라우저에만 저장되고 다른 곳으로 전송되지 않습니다.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="application/json" id="plant-data">[
+{"id": "P001", "name": "익모초", "sci": "Leonurus japonicus Houtt.", "desc": "들에 자라는 꿀풀과 두해살이풀로, 예로부터 산후 부인병 약재로 쓰여 '익모(益母)'라는 이름이 붙었습니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509277, "lng": 126.956363, "driveId": "1OED0YUF115PsGMzMxL71p6H0IL99FSVa", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 2, "gk": 0},
+{"id": "P002", "name": "벚나무", "sci": "Prunus serrulata Lindl. f. spontanea (Maxim.) Chin S.Chang", "desc": "봄에 연분홍 꽃이 잎보다 먼저 또는 함께 피는 장미과 낙엽큰키나무입니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509913, "lng": 126.956013, "driveId": "1w0Ego_jHhZA8jCnhl7AVMjEG7dzDI3CB", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 4, "gk": 0},
+{"id": "P003", "name": "물푸레나무", "sci": "Fraxinus rhynchophylla Hance", "desc": "가지를 물에 담그면 물이 푸르게 변한다 하여 이름 붙은, 목재가 단단해 도구·운동기구에 쓰이는 낙엽교목입니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509277, "lng": 126.956363, "driveId": "1ncZfCdxNvwLKeKgAJtuDlFTkzhtMedCD", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 2, "gk": 1},
+{"id": "P004", "name": "광나무", "sci": "Ligustrum japonicum Thunb.", "desc": "잎에 광택이 도는 남부지방 상록관목으로, 울타리나 정원수로 흔히 심습니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509913, "lng": 126.956013, "driveId": "1RrBvomYTJS_gRsRUZ3GcdSPvssXYu8J0", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 4, "gk": 1},
+{"id": "P005", "name": "물쑥", "sci": "Artemisia selengensis Turcz. ex Besser", "desc": "강가나 습지에서 자라는 국화과 여러해살이풀로, 어린순을 나물로 먹습니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5099131, "lng": 126.9560131, "driveId": "1-o7UMilPPZngmHOnKv12AQkKuDPGE7Ug", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 4, "gk": 2},
+{"id": "P006", "name": "황종화", "sci": "Tecoma stans (L.) Juss. ex Kunth", "desc": "트럼펫 모양의 밝은 노란색 꽃이 오래 피어 관상용으로 많이 심는 능소화과 상록성 나무로, 열매는 초반엔 녹색을 띠지만 자라면서 회갈색으로 변합니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509305, "lng": 126.95654, "driveId": "1mhphvewgkJbs0R8-7T59MekQqwdRmxux", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P007", "name": "옥잠화", "sci": "Hosta plantaginea (Lam.) Asch.", "desc": "여름에 향기로운 흰 꽃이 피는 비비추 종류로, 꽃봉오리가 옥비녀를 닮아 붙은 이름입니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509913, "lng": 126.956913, "driveId": "1KRXU8u3Mts0s8ZLQerRQ-b-xPn6Ix8d_", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P008", "name": "개망초", "sci": "Erigeron annuus (L.) Desf.", "desc": "들판 어디서나 흔한 국화과 두해살이풀로, 흰 혀꽃과 노란 통꽃이 계란프라이처럼 보입니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.51002, "lng": 126.955467, "driveId": "19OT20kqczPsE6pU_8rjasSceWQoMWt2Y", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P009", "name": "산딸나무", "sci": "Cornus kousa Bürger ex Hance", "desc": "흰 십자 모양 총포가 꽃처럼 보이고 가을에 딸기 같은 붉은 열매가 달리는 층층나무과 낙엽교목입니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509913, "lng": 126.956013, "driveId": "1VDynz-QLwVFiA4l817R5SEJbacE0oNn9", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 4, "gk": 3},
+{"id": "P010", "name": "담쟁이덩굴", "sci": "Parthenocissus tricuspidata (Siebold & Zucc.) Planch.", "desc": "흡착 뿌리로 벽이나 나무를 타고 오르는 포도과 덩굴식물로, 가을 단풍이 붉습니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.510969, "lng": 126.955074, "driveId": "1fb_8sJ-UCVMwEZ3nfoqctV0YWD4C72Wv", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P011", "name": "맥문동", "sci": "Liriope muscari (Decne.) L.H.Bailey", "desc": "그늘에서도 잘 자라 지피식물로 많이 쓰이며, 여름에 보라색 꽃이 이삭처럼 핍니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509424, "lng": 126.956121, "driveId": "1SM5qkhB7hsPHQbF_wassNXagtttJZxor", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P012", "name": "철쭉", "sci": "Rhododendron schlippenbachii Maxim.", "desc": "봄에 연분홍 꽃이 피는 진달래과 낙엽관목으로, 진달래와 달리 꽃에 독성이 있어 먹지 않습니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509424, "lng": 126.956216, "driveId": "1Rvt3T5TZgf7WipdlXXwH3aICg64WAxSH", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 4, "gk": 0},
+{"id": "P013", "name": "박쥐나무", "sci": "Alangium platanifolium (Siebold & Zucc.) Harms var. trilobum (Miq.) Ohwi", "desc": "잎이 박쥐 날개처럼 갈라진 모양이라 이름 붙은 낙엽관목입니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509424, "lng": 126.9562161, "driveId": "16NUuxNZvMDxZSdQkrBr1GEEE9LBuw-lN", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 4, "gk": 1},
+{"id": "P014", "name": "댕강나무", "sci": "Zabelia tyaihyonii (Nakai) Hisauti & H.Hara", "desc": "가지를 꺾으면 '댕강' 소리가 난다 하여 붙은 이름으로, 향기로운 연분홍 꽃이 피는 인동과 관목입니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5094241, "lng": 126.9562162, "driveId": "1Rb8OHtQ9qZ-QpNR8k7qpjubTvYerF4nr", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 4, "gk": 2},
+{"id": "P015", "name": "뽕나무", "sci": "Morus alba L.", "desc": "에의 먹이가 되는 잎과 검붉은 열매 '오디'로 잘 알려진 낙엽교목입니다.", "date": "2026.05.29", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5094243, "lng": 126.9562163, "driveId": "1DcLb3HoqWi0ggfNADx0Y20MSN_JS3EgU", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 4, "gk": 3},
+{"id": "P016", "name": "서양등골나무", "sci": "Ageratina altissima (L.) R.M.King & H.Rob.", "desc": "북미 원산의 생태계교란 외래식물로, 가을에 흰 꽃이 무리지어 핍니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509781, "lng": 126.9578813, "driveId": "1IQRQNGt1Ebi-Ajpz7s59PTkx6fx26j3P", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P017", "name": "메꽃", "sci": "Calystegia pubescens Lindl.", "desc": "들에서 분홍빛 나팔 모양 꽃을 피우는 덩굴성 여러해살이풀입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.50984, "lng": 126.956679, "driveId": "1jHKClF2KzvDno8310Z9MmJD9gvi2iM0J", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P018", "name": "쑥", "sci": "Artemisia indica Willd.", "desc": "떡·국·약재로 두루 쓰이는 국화과 여러해살이풀로 특유의 향이 강합니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509555, "lng": 126.956702, "driveId": "1wmQ0x6CB85b620D0Q0f5euDTKa9Saz5E", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P019", "name": "고들빼기", "sci": "Crepidiastrum sonchifolium (Bunge) J.H.Pak & Kawano", "desc": "쓴맛 나는 노란 꽃의 국화과 풀로, 김치나 나물로 먹습니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5097208, "lng": 126.9572072, "driveId": "1EKakfHRFh2PsQUaH_B5evCcXi455DirZ", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 3, "gk": 0},
+{"id": "P020", "name": "띠", "sci": "Imperata cylindrica (L.) Raeusch.", "desc": "흰 솜털 같은 꽃이삭이 달리는 볏과 여러해살이풀로, 뿌리(백모근)를 약으로 씁니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509838, "lng": 126.956776, "driveId": "1nPg-zmwVho5rTUCGYXkrUQcygGODi1nU", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 3, "gk": 0},
+{"id": "P021", "name": "펜둘라사초", "sci": "Carex pendula Huds.", "desc": "꽃이삭이 길게 늘어지는 유럽 원산 사초과 식물로, 주로 조경용으로 식재합니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.50964, "lng": 126.956638, "driveId": "1j23w5ESI0bp5mWNh3CED47Oje64Ic7Su", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P022", "name": "왕고들빼기", "sci": "Lactuca indica L.", "desc": "키가 크게 자라는 국화과 풀로, 연한 잎을 쌈채소로 먹습니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5098016, "lng": 126.9571817, "driveId": "1cadoOo3SZ99-cHNn6oILoeRq-EaoOBu7", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P023", "name": "개회향", "sci": "Ligusticum tachiroei (Franch. & Sav.) M.Hiroe & Constance", "desc": "산지 바위틈에 자라는 미나리과 여러해살이풀입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5098992, "lng": 126.9570553, "driveId": "11uNQ_hCR9qi8Q3yuDSr-4Id066xX9NGA", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P024", "name": "정금나무", "sci": "Vaccinium oldhamii Miq.", "desc": "블루베리와 같은 진달래과로, 가을에 검게 익는 열매를 먹을 수 있습니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5097298, "lng": 126.9572072, "driveId": "1CrZig2fMqVOUCDj4QBBeZhE4g7Q-spxh", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 3, "gk": 1},
+{"id": "P025", "name": "사철나무", "sci": "Euonymus japonicus Thunb.", "desc": "사철 푸른 잎을 가진 상록관목으로 생울타리에 널리 쓰입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.51003, "lng": 126.956544, "driveId": "1gh2uFx7e1MNaGXRHESrXUatYX7alrU-Z", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 2, "gk": 0},
+{"id": "P026", "name": "참나리", "sci": "Lilium lancifolium Thunb.", "desc": "주황색 꽃잎에 검은 점이 박혀 뒤로 말리며, 잎겨드랑이에 검은 주아가 달리는 백합과 식물입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509754, "lng": 126.956546, "driveId": "1QJ25QLs2V0Epnaf3rgrcLWwSiY0xYktl", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P027", "name": "찔레나무", "sci": "Rosa multiflora THUNB.", "desc": "흰 꽃이 무리지어 피는 야생 장미로, 가지에 가시가 많습니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509824, "lng": 126.9567505, "driveId": "1qNB4AhgfX_SZrJfN5s8W1xAGfJ_dTF8z", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 3, "gk": 1},
+{"id": "P028", "name": "왕바랭이", "sci": "Eleusine indica (L.) Gaertn.", "desc": "길가나 밭에 흔한 볏과 한해살이풀로 대표적인 잡초입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5097298, "lng": 126.9572072, "driveId": "158EdKmBguBJbaPc5kXF4W9hs1NZ3jnaZ", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 3, "gk": 2},
+{"id": "P029", "name": "눈향나무", "sci": "Juniperus chinensis L. var. sargentii A.Henry", "desc": "고산지대에서 땅에 누워 자라는 향나무 종류입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509167, "lng": 126.956303, "driveId": "1ibW7yd5r52JbhsnnlI69RPWHNDIqnm3c", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P030", "name": "호밀풀", "sci": "Lolium perenne L.", "desc": "목초·잔디용으로 심는 볏과 식물로 영문명은 perennial ryegrass입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509824, "lng": 126.9567505, "driveId": "1txPrphplAUBuj6ct2TyTVNHGrtuI8VaL", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 3, "gk": 2},
+{"id": "P031", "name": "큰방가지똥", "sci": "Sonchus asper (L.) Hill", "desc": "잎 가장자리에 가시가 있는 국화과 한해살이 잡초입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5097289, "lng": 126.9567506, "driveId": "1NMigY8xj-0XYmZDoq22dzGgaOX8PLmXQ", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P032", "name": "코스모스", "sci": "Cosmos bipinnatus Cav.", "desc": "가을에 분홍·흰색 꽃이 피는 멕시코 원산의 국화과 한해살이풀입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509843, "lng": 126.956963, "driveId": "18E_bjiMZgCJ4z-RGgRmRsg8ecI1DYi2x", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P033", "name": "나문재", "sci": "Suaeda glauca (Bunge) Bunge", "desc": "바닷가 갯벌에 자라는 명아주과 염생식물로, 가을에 붉게 물듭니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.509678, "lng": 126.956774, "driveId": "1U_ujbgg-tKctezIEXLq0vMnZnoC8quRO", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1},
+{"id": "P034", "name": "서양금혼초", "sci": "Hypochaeris radicata L.", "desc": "유럽 원산의 생태계교란식물로, 민들레와 비슷한 노란 꽃이 핍니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.5100375, "lng": 126.9565299, "driveId": "1y55m1JBMSp2tBpgxY77CcgKEDF7P8G5v", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 2, "gk": 1},
+{"id": "P035", "name": "두릅나무", "sci": "Aralia elata (Miq.) Seem.", "desc": "봄에 돋는 새순(두릅)을 나물로 먹는 두릅나무과 낙엽관목입니다.", "date": "2026.06.05", "region": "서울 동작구", "school": "동양중학교", "lat": 37.51002191, "lng": 126.9566631, "driveId": "1FD1tJYocCH1_A97rv0CPrPw7U3bGyFRa", "temp": 12.8, "humid": 61.8, "rain": 1417.9, "sun": 2066, "gn": 1}
+]</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  const PLANTS = JSON.parse(document.getElementById('plant-data').textContent);
+  const SCHOOL = { lat: 37.5097422, lng: 126.9565391 };   // 관찰 지점 35곳의 중심
+  const KEY_STORE = 'dongyang-plantmap.gmaps-key';
+  const MAX_ZOOM = 20, TILE_MAX = 19;
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const byId = {};
+  PLANTS.forEach((p, i) => { p.no = i + 1; byId[p.id] = p; });
+  $('count').textContent = PLANTS.length;
+
+  /* 마커 배치.
+     좌표가 같거나 몇 미터 이내인 식물이 많아 낮은 축척에서는 마커가 서로 겹쳐
+     하나씩 누를 수 없다. 그래서 겹치는 마커만 화면상 최소 간격(MIN_SEP_PX)까지
+     밀어내고, 확대하면 간격이 저절로 확보되므로 실제 좌표로 다시 모이게 한다. */
+  const M_PER_DEG = 111320;
+  const COS_LAT = Math.cos(SCHOOL.lat * Math.PI / 180);
+  const MIN_SEP_PX = 24;
+
+  function layout(zoom) {
+    const mPerPx = 156543.03392 * COS_LAT / Math.pow(2, zoom);
+    /* 축소할수록 간격이 커져 실제 위치와 멀어지므로 12 m로 제한한다 */
+    const sep = Math.min(MIN_SEP_PX * mPerPx, 12);
+
+    /* 실제 좌표를 학교 중심 기준 미터 좌표로 옮긴다.
+       완전히 같은 지점은 밀어낼 방향이 없으므로 작은 원 위에 먼저 흩어 둔다. */
+    const pts = PLANTS.map((p) => {
+      let x = (p.lng - SCHOOL.lng) * M_PER_DEG * COS_LAT;
+      let y = (p.lat - SCHOOL.lat) * M_PER_DEG;
+      if (p.gn > 1) {
+        const a = 2 * Math.PI * p.gk / p.gn;
+        x += Math.cos(a) * 0.5;
+        y += Math.sin(a) * 0.5;
+      }
+      return { x: x, y: y };
+    });
+
+    /* 학교 배지는 움직이지 않으므로 마커가 비켜가게 한다 */
+    const schoolSep = Math.min(30 * mPerPx, 15);
+
+    for (let iter = 0; iter < 80; iter++) {
+      let moved = false;
+      for (let i = 0; i < pts.length; i++) {
+        const pt = pts[i];
+        const ds = Math.hypot(pt.x, pt.y);
+        if (ds < schoolSep) {
+          if (ds < 1e-6) {
+            pt.x = schoolSep;
+          } else {
+            const k = (schoolSep - ds) / ds;
+            pt.x += pt.x * k; pt.y += pt.y * k;
+          }
+          moved = true;
+        }
+        for (let j = i + 1; j < pts.length; j++) {
+          const a = pts[i], b = pts[j];
+          let dx = b.x - a.x, dy = b.y - a.y;
+          let d = Math.hypot(dx, dy);
+          if (d >= sep) continue;
+          if (d < 1e-6) { dx = 1; dy = 0; d = 1; }
+          const push = (sep - d) / 2 / d;
+          a.x -= dx * push; a.y -= dy * push;
+          b.x += dx * push; b.y += dy * push;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+
+    const out = {};
+    PLANTS.forEach((p, i) => {
+      out[p.id] = [SCHOOL.lat + pts[i].y / M_PER_DEG,
+                   SCHOOL.lng + pts[i].x / (M_PER_DEG * COS_LAT)];
+    });
+    return out;
+  }
+
+  let placed = layout(18);
+  const posOf = (p) => placed[p.id];
+
+  /* 구글 드라이브 사진은 접근 방식이 다른 두 주소를 차례로 시도한다 */
+  const photoSources = (driveId, w) => !driveId ? [] : [
+    'https://lh3.googleusercontent.com/d/' + driveId + '=w' + w,
+    'https://drive.google.com/thumbnail?id=' + driveId + '&sz=w' + w
+  ];
+  function loadImage(img, sources, onFail) {
+    let i = 0;
+    img.onerror = () => { i += 1; i < sources.length ? (img.src = sources[i]) : onFail && onFail(); };
+    if (sources.length) img.src = sources[0]; else onFail && onFail();
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3600);
+  }
+
+  /* ══════════ 지도 ══════════
+     Leaflet과 구글 지도가 같은 인터페이스를 구현한다:
+     highlight / panTo / openPopup / setBase / invalidate            */
+  let mapApi = null;
+
+  const popupHtml = (p) =>
+    '<div class="pop"><b>' + esc(p.name) + '</b><i class="sci-font">' + esc(p.sci) +
+    '</i><button type="button" data-open="' + p.id + '">자세히 보기 →</button></div>';
+
+  /* Leaflet 팝업과 구글 InfoWindow 모두 지도 안에 그려지므로 클릭을 한 곳에서 받는다 */
+  $('map').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-open]');
+    if (b) openDetail(b.getAttribute('data-open'));
+  });
+
+  const BASE = {
+    satellite: {
+      label: '위성',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      attr: 'Imagery &copy; Esri, Maxar, Earthstar Geographics'
+    },
+    street: {
+      label: '일반',
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attr: '&copy; OpenStreetMap contributors'
+    }
+  };
+  let baseKey = 'satellite';
+
+  function buildLeaflet() {
+    /* 저작권 표시는 지도 위 마커를 가리지 않도록 지도 아래 전용 줄에 둔다 */
+    const map = L.map('map', { maxZoom: MAX_ZOOM, attributionControl: false })
+      .setView([SCHOOL.lat, SCHOOL.lng], 18);
+    const tileOpts = () => ({ maxZoom: MAX_ZOOM, maxNativeZoom: TILE_MAX });
+    const credit = () => {
+      $('credit').innerHTML = BASE[baseKey].attr +
+        ' · <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a>';
+    };
+    credit();
+    let layer = L.tileLayer(BASE[baseKey].url, tileOpts()).addTo(map);
+
+    L.marker([SCHOOL.lat, SCHOOL.lng], {
+      icon: L.divIcon({ className: '', html: '<div class="pin-school" title="동양중학교">🏫</div>',
+        iconSize: [30, 30], iconAnchor: [15, 15] }),
+      interactive: false, zIndexOffset: -200
+    }).addTo(map);
+
+    const pins = {};
+    PLANTS.forEach((p) => {
+      const m = L.marker(posOf(p), {
+        icon: L.divIcon({ className: '', html: '<div class="pin">' + p.no + '</div>',
+          iconSize: [22, 22], iconAnchor: [11, 11] }),
+        title: p.no + '. ' + p.name, riseOnHover: true, keyboard: true, alt: p.name
+      }).addTo(map);
+      m.bindPopup(popupHtml(p), { closeButton: false, offset: [0, -8] });
+      m.on('click', () => setActive(p.id, false));
+      pins[p.id] = m;
+    });
+
+    /* 작은 화면에서 전체를 다 담으려 하면 축척이 낮아져 마커가 다시 겹치므로
+       18단계 아래로는 내려가지 않는다 (나머지는 지도를 움직여 볼 수 있다) */
+    const fitAll = () => {
+      const b = L.latLngBounds(PLANTS.map(posOf)).pad(0.14);
+      map.setView(b.getCenter(), Math.max(18, Math.min(MAX_ZOOM, map.getBoundsZoom(b))));
+    };
+    fitAll();
+    map.on('zoomend', () => {
+      placed = layout(map.getZoom());
+      PLANTS.forEach((p) => pins[p.id].setLatLng(posOf(p)));
+    });
+
+    return {
+      highlight(id) {
+        Object.keys(pins).forEach((k) => {
+          const el = pins[k].getElement();
+          if (el && el.firstChild) el.firstChild.classList.toggle('on', k === id);
+          pins[k].setZIndexOffset(k === id ? 1000 : 0);
+        });
+      },
+      panTo(p) { map.setView(posOf(p), Math.max(map.getZoom(), 18)); },
+      openPopup(id) { pins[id].openPopup(); },
+      setBase() {
+        map.removeLayer(layer);
+        layer = L.tileLayer(BASE[baseKey].url, tileOpts()).addTo(map);
+        credit();
+      },
+      invalidate() { map.invalidateSize(); },
+      fitAll: fitAll
+    };
+  }
+
+  function buildGoogle() {
+    const g = window.google.maps;
+    const map = new g.Map($('map'), {
+      center: SCHOOL, zoom: 18, maxZoom: MAX_ZOOM,
+      mapTypeId: baseKey === 'satellite' ? 'hybrid' : 'roadmap',
+      mapTypeControl: false, streetViewControl: false, fullscreenControl: false
+    });
+
+    new g.Marker({
+      position: SCHOOL, map, clickable: false, zIndex: 1, title: '동양중학교',
+      icon: { path: g.SymbolPath.CIRCLE, scale: 13, fillColor: '#ffffff', fillOpacity: 1,
+              strokeColor: '#12351f', strokeWeight: 2.5 },
+      label: { text: '🏫', fontSize: '14px' }
+    });
+
+    const icon = (on) => ({
+      path: g.SymbolPath.CIRCLE, scale: on ? 14 : 11,
+      fillColor: on ? '#d9642a' : '#227045', fillOpacity: 1,
+      strokeColor: '#ffffff', strokeWeight: 2
+    });
+
+    $('credit').textContent = '지도 데이터 © Google';
+
+    const info = new g.InfoWindow();
+    const pins = {};
+    const bounds = new g.LatLngBounds();
+    const ll = (p) => ({ lat: posOf(p)[0], lng: posOf(p)[1] });
+
+    PLANTS.forEach((p) => {
+      const m = new g.Marker({
+        position: ll(p), map, title: p.no + '. ' + p.name, icon: icon(false),
+        label: { text: String(p.no), color: '#ffffff', fontSize: '11px', fontWeight: '700' }
+      });
+      m.addListener('click', () => setActive(p.id, true));
+      pins[p.id] = m;
+      bounds.extend(m.getPosition());
+    });
+    const fitAll = () => {
+      map.fitBounds(bounds, 56);
+      g.event.addListenerOnce(map, 'idle', () => { if (map.getZoom() < 18) map.setZoom(18); });
+    };
+    fitAll();
+
+    map.addListener('zoom_changed', () => {
+      placed = layout(map.getZoom());
+      PLANTS.forEach((p) => pins[p.id].setPosition(ll(p)));
+    });
+
+    return {
+      highlight(id) {
+        Object.keys(pins).forEach((k) => {
+          pins[k].setIcon(icon(k === id));
+          pins[k].setZIndex(k === id ? 900 : 10);
+        });
+      },
+      panTo(p) {
+        if (map.getZoom() < 18) map.setZoom(18);
+        map.panTo(ll(p));
+      },
+      openPopup(id) {
+        info.setContent(popupHtml(byId[id]));
+        info.open(map, pins[id]);
+      },
+      setBase() { map.setMapTypeId(baseKey === 'satellite' ? 'hybrid' : 'roadmap'); },
+      invalidate() { g.event.trigger(map, 'resize'); },
+      fitAll: fitAll
+    };
+  }
+
+  function mapFailed(reason) {
+    $('map').innerHTML = '<div class="map-fail"><div style="font-size:34px">🗺️</div>' +
+      '<p><b>지도를 불러오지 못했습니다.</b><br>' + esc(reason) +
+      '<br>인터넷 연결을 확인한 뒤 새로고침해 주세요. 오른쪽 식물 목록은 그대로 사용할 수 있습니다.</p></div>';
+  }
+
+  /* ══════════ 목록 ══════════ */
+  function renderList(keyword) {
+    const list = $('list');
+    const kw = (keyword || '').trim().toLowerCase();
+    const hits = PLANTS.filter((p) =>
+      !kw || p.name.toLowerCase().includes(kw) || p.sci.toLowerCase().includes(kw));
+
+    list.innerHTML = '';
+    if (!hits.length) {
+      list.innerHTML = '<p class="empty">검색 결과가 없습니다.</p>';
+      return;
+    }
+    hits.forEach((p) => {
+      const btn = document.createElement('button');
+      btn.className = 'plant-item';
+      btn.dataset.id = p.id;
+      btn.innerHTML = '<span class="pi-num">' + p.no + '</span>' +
+        '<img class="pi-thumb" alt="" loading="lazy">' +
+        '<span class="pi-text"><span class="pi-name">' + esc(p.name) + '</span>' +
+        '<span class="pi-sci sci-font">' + esc(p.sci) + '</span></span>';
+      loadImage(btn.querySelector('.pi-thumb'), photoSources(p.driveId, 160));
+      btn.onclick = () => openDetail(p.id);
+      btn.onmouseenter = () => mapApi && mapApi.highlight(p.id);
+      list.appendChild(btn);
+    });
+  }
+
+  function setActive(id, openPopup) {
+    document.querySelectorAll('.plant-item').forEach((el) =>
+      el.classList.toggle('active', el.dataset.id === id));
+    if (!mapApi) return;
+    mapApi.highlight(id);
+    if (openPopup) mapApi.openPopup(id);
+  }
+
+  /* ══════════ 상세 화면 ══════════ */
+  function detailHtml(p) {
+    const gmap = 'https://www.google.com/maps/search/?api=1&query=' + p.lat + ',' + p.lng;
+    const drive = p.driveId ? 'https://drive.google.com/file/d/' + p.driveId + '/view' : null;
+
+    return '' +
+    '<div class="hero">' +
+      '<img id="hero-img" alt="' + esc(p.name) + ' 사진">' +
+      '<div class="hero-fallback" id="hero-fallback">' +
+        '<div class="big">🌿</div>' +
+        '<p><b>사진을 불러올 수 없습니다.</b><br>구글 드라이브에서 이 사진의 공유 설정을 ' +
+        '‘링크가 있는 모든 사용자’로 바꾸면 여기에 표시됩니다.</p>' +
+        (drive ? '<a class="link-btn" href="' + drive + '" target="_blank" rel="noopener">드라이브에서 사진 열기</a>' : '') +
+      '</div>' +
+      '<span class="hero-badge">' + p.no + ' / ' + PLANTS.length + '</span>' +
+    '</div>' +
+
+    '<div class="name-block">' +
+      '<h2>' + esc(p.name) + '</h2>' +
+      '<p class="sci sci-font">' + esc(p.sci) + '</p>' +
+      '<div class="tags">' +
+        '<span class="tag">🏫 ' + esc(p.school) + '</span>' +
+        '<span class="tag">📍 ' + esc(p.region) + '</span>' +
+        '<span class="tag">📅 ' + esc(p.date) + ' 관찰</span>' +
+      '</div>' +
+    '</div>' +
+
+    '<section class="card"><h3>🌱 식물 설명</h3><p class="desc">' + esc(p.desc) + '</p></section>' +
+
+    '<section class="card">' +
+      '<h3>🔎 관찰 정보</h3>' +
+      '<dl class="kv">' +
+        '<dt>식물명</dt><dd>' + esc(p.name) + '</dd>' +
+        '<dt>학명</dt><dd class="sci-font">' + esc(p.sci) + '</dd>' +
+        '<dt>고유번호</dt><dd class="mono">' + esc(p.id) + '</dd>' +
+        '<dt>관찰 일자</dt><dd>' + esc(p.date) + '</dd>' +
+        '<dt>관찰 장소</dt><dd>' + esc(p.region) + ' ' + esc(p.school) + '</dd>' +
+        '<dt>위도 · 경도</dt><dd class="mono">' + p.lat + ', ' + p.lng + '</dd>' +
+      '</dl>' +
+      '<div class="links">' +
+        '<a class="link-btn" href="' + gmap + '" target="_blank" rel="noopener">🗺️ 구글 지도에서 위치 보기</a>' +
+        (drive ? '<a class="link-btn" href="' + drive + '" target="_blank" rel="noopener">🖼️ 원본 사진 열기</a>' : '') +
+      '</div>' +
+    '</section>' +
+
+    '<section class="card">' +
+      '<h3>🌤️ 이 지역의 기후 (연평균)</h3>' +
+      '<div class="stats">' +
+        '<div class="stat"><div class="v">' + p.temp + '</div><div class="u">℃</div><div class="l">기온</div></div>' +
+        '<div class="stat"><div class="v">' + p.humid + '</div><div class="u">%</div><div class="l">습도</div></div>' +
+        '<div class="stat"><div class="v">' + p.rain + '</div><div class="u">mm</div><div class="l">강수량</div></div>' +
+        '<div class="stat"><div class="v">' + p.sun + '</div><div class="u">시간</div><div class="l">일조량</div></div>' +
+      '</div>' +
+      '<p class="note">' + esc(p.region) + ' 지역의 연평균 값으로, 관찰한 35종 모두에 같게 적용됩니다.</p>' +
+    '</section>' +
+
+    '<div class="nav-row">' + navBtn(p, -1) + navBtn(p, 1) + '</div>' +
+    '<button class="btn-home" id="btn-back-bottom">← 지도로 돌아가기</button>';
+  }
+
+  function navBtn(p, step) {
+    const t = PLANTS[p.no - 1 + step];
+    const next = step > 0;
+    if (!t) return '<div class="nav-btn" style="visibility:hidden"></div>';
+    return '<button class="nav-btn' + (next ? ' next' : '') + '" data-go="' + t.id + '">' +
+      '<div class="lbl">' + (next ? '다음 식물 →' : '← 이전 식물') + '</div>' +
+      '<div class="nm">' + esc(t.name) + '</div></button>';
+  }
+
+  let currentId = null;
+
+  function openDetail(id, fromHash) {
+    const p = byId[id];
+    if (!p) return;
+    currentId = id;
+
+    $('detail-body').innerHTML = detailHtml(p);
+    $('seq').textContent = p.no + '번째 식물 · 전체 ' + PLANTS.length + '종';
+
+    const img = $('hero-img'), fb = $('hero-fallback');
+    loadImage(img, photoSources(p.driveId, 1200), () => {
+      img.style.display = 'none';
+      fb.classList.add('show');
+    });
+
+    $('detail-body').querySelectorAll('[data-go]').forEach((b) => {
+      b.onclick = () => openDetail(b.dataset.go);
+    });
+    $('btn-back-bottom').onclick = closeDetail;
+
+    const sc = $('screen-detail');
+    sc.classList.add('show');
+    sc.setAttribute('aria-hidden', 'false');
+    sc.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+
+    setActive(id, false);
+    const item = document.querySelector('.plant-item[data-id="' + id + '"]');
+    if (item) item.scrollIntoView({ block: 'nearest' });
+    if (mapApi) mapApi.panTo(p);
+    if (!fromHash && location.hash !== '#p/' + id) location.hash = 'p/' + id;
+  }
+
+  function hideDetail() {
+    const sc = $('screen-detail');
+    sc.classList.remove('show');
+    sc.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    currentId = null;
+    if (mapApi) mapApi.invalidate();
+  }
+
+  function closeDetail() {
+    hideDetail();
+    if (location.hash) history.pushState(null, '', location.pathname + location.search);
+  }
+  $('btn-back-top').onclick = closeDetail;
+
+  /* 주소창 해시 · 브라우저 뒤로가기 */
+  function syncFromHash() {
+    const m = location.hash.match(/^#p\/(P\d+)$/);
+    if (m && byId[m[1]]) {
+      if (currentId !== m[1]) openDetail(m[1], true);
+    } else if (currentId) {
+      hideDetail();
+    }
+  }
+  window.addEventListener('hashchange', syncFromHash);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && currentId) closeDetail(); });
+
+  /* ══════════ 조작 ══════════ */
+  $('q').oninput = (e) => renderList(e.target.value);
+
+  $('btn-base').onclick = () => {
+    baseKey = baseKey === 'satellite' ? 'street' : 'satellite';
+    const b = $('btn-base');
+    b.textContent = BASE[baseKey].label;
+    b.classList.toggle('on', baseKey === 'satellite');
+    if (mapApi) mapApi.setBase();
+  };
+
+  /* 창 크기나 기기 방향이 바뀌면 지도 크기를 다시 재고, 보고 있는 식물이 없을 때만 전체를 맞춘다 */
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (!mapApi) return;
+      mapApi.invalidate();
+      if (!currentId) mapApi.fitAll();
+    }, 200);
+  });
+
+  $('grip').onclick = () => {
+    const collapsed = $('sidebar').classList.toggle('collapsed');
+    $('grip-arrow').textContent = collapsed ? '▴' : '▾';
+    setTimeout(() => mapApi && mapApi.invalidate(), 280);
+  };
+
+  const savedKey = () => { try { return localStorage.getItem(KEY_STORE) || ''; } catch (e) { return ''; } };
+
+  $('btn-gmap').onclick = () => {
+    $('key-input').value = savedKey();
+    $('modal').classList.add('show');
+    $('key-input').focus();
+  };
+  $('key-cancel').onclick = () => $('modal').classList.remove('show');
+  $('modal').onclick = (e) => { if (e.target === $('modal')) $('modal').classList.remove('show'); };
+  $('key-save').onclick = () => {
+    const k = $('key-input').value.trim();
+    if (!k) { toast('API 키를 입력해 주세요.'); return; }
+    try { localStorage.setItem(KEY_STORE, k); } catch (e) {}
+    location.reload();
+  };
+  $('key-clear').onclick = () => {
+    try { localStorage.removeItem(KEY_STORE); } catch (e) {}
+    location.reload();
+  };
+
+  function useLeaflet() {
+    if (!window.L) { mapFailed('지도 라이브러리(Leaflet)를 받지 못했습니다.'); return; }
+    try { mapApi = buildLeaflet(); } catch (err) { mapFailed(String(err && err.message || err)); }
+  }
+
+  function start() {
+    renderList('');
+
+    const urlKey = new URLSearchParams(location.search).get('gmapskey');
+    if (urlKey) { try { localStorage.setItem(KEY_STORE, urlKey.trim()); } catch (e) {} }
+    const key = savedKey();
+
+    if (!key) {
+      useLeaflet();
+      syncFromHash();
+      return;
+    }
+
+    /* 구글 지도를 먼저 시도하고, 실패하면 기본 위성 지도로 되돌린다 */
+    let settled = false;
+    const fallback = (msg) => {
+      if (settled) return;
+      settled = true;
+      toast(msg);
+      $('map').innerHTML = '';
+      useLeaflet();
+      syncFromHash();
+    };
+    window.__gmapReady = () => {
+      if (settled) return;
+      settled = true;
+      $('btn-gmap').textContent = '구글 지도 ✓';
+      $('btn-gmap').classList.add('on');
+      try { mapApi = buildGoogle(); } catch (err) { settled = false; fallback('구글 지도를 여는 중 문제가 생겼습니다.'); return; }
+      syncFromHash();
+    };
+    window.gm_authFailure = () => fallback('구글 지도 API 키가 거부되었습니다. 기본 위성 지도로 표시합니다.');
+
+    const s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) +
+            '&callback=__gmapReady&language=ko&region=KR&loading=async';
+    s.async = true;
+    s.onerror = () => fallback('구글 지도를 불러오지 못했습니다. 기본 위성 지도로 표시합니다.');
+    document.head.appendChild(s);
+    setTimeout(() => fallback('구글 지도 응답이 없어 기본 위성 지도로 표시합니다.'), 9000);
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>
